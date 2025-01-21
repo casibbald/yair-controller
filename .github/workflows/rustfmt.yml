@@ -20,13 +20,13 @@ jobs:
           components: rustfmt
       - run: cargo +nightly fmt
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: rustfmt
-          signoff: true
-          title: rustfmt
-          body: Changes from `cargo +nightly fmt`.
-          branch: rustfmt
-          # Delete branch when merged
-          delete-branch: true
+#      - name: Create Pull Request
+#        uses: peter-evans/create-pull-request@v7
+#        with:
+#          commit-message: rustfmt
+#          signoff: true
+#          title: rustfmt
+#          body: Changes from `cargo +nightly fmt`.
+#          branch: rustfmt
+#          # Delete branch when merged
+#          delete-branch: true
