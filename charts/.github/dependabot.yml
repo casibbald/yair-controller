@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    groups:
+      artifact-io:
+        patterns:
+          - actions/upload-artifact
+          - actions/download-artifact
+
+  - package-ecosystem: "cargo"
+    directory: "/"
+    labels:
+      - "dependencies"
+    schedule:
+      interval: "weekly"
+    groups:
+      kube:
+        patterns:
+          - kube
+          - k8s-openapi
+      otel:
+        patterns:
+          - tracing-opentelemetry
+          - opentelemetry-otlp
+          - opentelemetry_sdk
+          - opentelemetry
+          - tonic
