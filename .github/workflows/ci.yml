@@ -51,7 +51,7 @@ jobs:
               --mount type=bind,source=${{ github.workspace }},target=/volume \
               --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
               --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-              clux/muslrust:stable \
+              clux/muslrust:nightly \
               cargo build --release --bin controller
           cp target/x86_64-unknown-linux-musl/release/controller .
 
@@ -181,7 +181,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly
           components: rustfmt,clippy
