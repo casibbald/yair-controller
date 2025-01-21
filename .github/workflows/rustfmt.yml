@@ -1,10 +1,13 @@
 # When pushed to master, run `cargo +nightly fmt --all` and open a PR.
 name: rustfmt
 on:
+  pull_request:
   push:
-    # Limit to `master` because this action creates a PR
     branches:
-      - master
+      - main
+      - ^[0-9]{1,2}-.*$
+    tags:
+      - '*'
 jobs:
   rustfmt_nightly:
     runs-on: ubuntu-latest
