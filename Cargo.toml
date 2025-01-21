@@ -1,0 +1,22 @@
+[package]
+name = "yapp"
+version = "0.1.0"
+authors = ["Charles Sibbald <casibbald@gmail.com>"]
+edition = "2024"
+default-run = "controller"
+license = "Apache-2.0"
+publish = false
+
+[[bin]]
+doc = false
+name = "controller"
+path = "src/main.rs"
+
+[[bin]]
+doc = false
+name = "crdgen"
+path = "src/crdgen.rs"
+
+[lib]
+name = "controller"
+path = "src/lib.rs"
