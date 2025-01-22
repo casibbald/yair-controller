@@ -308,14 +308,11 @@ jobs:
           platforms: linux/amd64
 
       - name: Install cosign
-        if: ${{ inputs.push }}
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
       - name: Keyless signing of image
-        if: ${{ inputs.push }}
         run: |
           cosign sign --yes ${{ inputs.image }}@${{ steps.build.outputs.digest }}
       - name: Verify the image signing
-        if: ${{ inputs.push }}
         run: |
           cosign verify ${{ inputs.image }}@${{ steps.build.outputs.digest }} \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
