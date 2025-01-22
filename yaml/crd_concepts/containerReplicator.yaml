@@ -1,0 +1,32 @@
+---
+apiVersion: replicator.yapp.example.com/v1alpha1
+kind: ContainerPromotionReplicator
+metadata:
+  namespace: my-team
+  labels:
+    env: dev
+    app: my-app
+  name: my-app-promotion
+spec:
+  repositorySelector:
+    repositoryRef:
+      name: my-team-ci-repository
+      namespace: my-team
+  destinationRepositoriesSelector:
+    repositoryRef:
+      - name: my-team-prod-eu-repository
+        namespace: my-team
+      - name: my-team-prod-us-repository
+        namespace: my-team
+  promotionSelectors:
+    deployments:
+    - name: my-app
+      images:
+        - my-app
+    - name: my-app-sidecar
+      autoDetectImages: true
+    jobs:
+    - name: some-dodgy-job
+      images:
+        - doggy-jobs-image
+        - doggy-jobs-sidecar
