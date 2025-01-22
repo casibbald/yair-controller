@@ -9,33 +9,26 @@ on:
     tags:
       - '*'
 
+env:
+  RUST_TOOLCHAIN: nightly
+
+
 jobs:
-  docker-base:
+  clippy:
+    name: Run Clippy
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     steps:
-      - uses: actions/checkout@v4
-
-      # Build and push with docker buildx
-      - name: Setup docker buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Configure tags based on git tags + latest
-        uses: docker/metadata-action@v5
-        id: meta
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          images: clux/controller
-          tags: |
-            type=pep440,pattern={{version}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=pr
-#
-#      - name: Docker login on main origin
-#        uses: docker/login-action@v3
-#        if: github.event_name != 'pull_request'
-#        with:
-#          username: ${{ secrets.DOCKERHUB_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt,clippy
+
       - uses: actions/cache@v4
         with:
           path: |
@@ -45,43 +38,72 @@ jobs:
             target/
           key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Compile base features
-        run: |
-          mkdir -p ~/.cargo/{git,registry}
-          docker run --rm -t \
-              --mount type=bind,source=${{ github.workspace }},target=/volume \
-              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
-              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-              clux/muslrust:nightly \
-              cargo build --release --bin controller
-          cp target/x86_64-unknown-linux-musl/release/controller .
-
-      - name: Docker buildx and push with base features
-        uses: docker/build-push-action@v6
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
         with:
-          context: .
-          cache-from: type=gha,scope=base
-          cache-to: type=gha,scope=base,mode=max
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64
+          command: fmt
+          args: --all -- --check
 
-      - name: Persist base image build to a tarball
-        uses: docker/build-push-action@v6
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
         with:
-          context: .
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha,scope=base
-          outputs: type=docker,dest=/tmp/image.tar
+          command: clippy
+          args: --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
 
-      - name: Upload base docker image as artifact for e2e tests
-        uses: actions/upload-artifact@v4
+
+  lint:
+    needs: [clippy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          name: controller-image
-          path: /tmp/image.tar
-#
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt,clippy
+      - run: cargo +${{ env.RUST_TOOLCHAIN }} fmt -- --check
+
+      - uses: giraffate/clippy-action@v1
+        with:
+          reporter: 'github-pr-review'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --all-features
+
+  test:
+    needs : [clippy]
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt,clippy
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --all
+
+
+
+  #
 #  docker-otel:
 #    runs-on: ubuntu-latest
 #    steps:
@@ -117,7 +139,7 @@ jobs:
 #              --mount type=bind,source=${{ github.workspace }},target=/volume \
 #              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
 #              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-#              clux/muslrust:stable \
+#              clux/muslrust:${{ env.RUST_TOOLCHAIN }} \
 #              cargo build --features=telemetry --release --bin controller
 #          cp target/x86_64-unknown-linux-musl/release/controller .
 #
@@ -176,29 +198,12 @@ jobs:
 #      - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
 #      - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
 #
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install protoc
-        run: sudo apt-get install -y protobuf-compiler
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly
-          components: rustfmt,clippy
-      - run: cargo +nightly fmt -- --check
 
-      - uses: giraffate/clippy-action@v1
-        with:
-          reporter: 'github-pr-review'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          clippy_flags: --all-features
-
-#  integration:
+  #  integration:
 #    runs-on: ubuntu-latest
 #    steps:
 #      - uses: actions/checkout@v4
-#      - uses: dtolnay/rust-toolchain@stable
+#      - uses: dtolnay/rust-toolchain@${{ env.RUST_TOOLCHAIN }}
 #      - uses: Swatinem/rust-cache@v2
 #      - uses: nolar/setup-k3d-k3s@v1
 #        with:
@@ -213,13 +218,15 @@ jobs:
 #      - name: Run all default features integration library tests
 #        run: cargo test --lib --all -- --ignored
 #
+
+
 #  unit:
 #    runs-on: ubuntu-latest
 #    steps:
 #      - uses: actions/checkout@v4
 #        with:
 #          fetch-depth: 2
-#      - uses: dtolnay/rust-toolchain@stable
+#      - uses: dtolnay/rust-toolchain@${{ env.RUST_TOOLCHAIN }}
 #      - uses: Swatinem/rust-cache@v2
 #
 #      # Real CI work starts here
@@ -238,3 +245,81 @@ jobs:
 #              echo "Please run 'just generate' and commit the results"
 #              exit 1
 #          fi
+
+  docker-base:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build and push with docker buildx
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure tags based on git tags + latest
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: clux/controller
+          tags: |
+            type=pep440,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=pr
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      #
+      #      - name: Docker login on main origin
+      #        uses: docker/login-action@v3
+      #        if: github.event_name != 'pull_request'
+      #        with:
+      #          username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      #
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Compile base features
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:${{ env.RUST_TOOLCHAIN }} \
+              cargo build --release --bin yapp-controller
+          cp target/x86_64-unknown-linux-musl/release/yapp-controller .
+
+      - name: Docker buildx and push with base features
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,scope=base,mode=max
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+
+      - name: Persist base image build to a tarball
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha,scope=base
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Upload base docker image as artifact for e2e tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: controller-image
+          path: /tmp/image.tar
