@@ -5,6 +5,8 @@
 # tilt up telemetry
 config.define_string("features", args=True)
 cfg = config.parse()
+port = 11350
+
 features = cfg.get('features', "")
 print("compiling with features: {}".format(features))
 
