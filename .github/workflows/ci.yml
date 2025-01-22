@@ -101,8 +101,6 @@ jobs:
           command: test
           args: --all-features --all
 
-
-
   #
 #  docker-otel:
 #    runs-on: ubuntu-latest
@@ -298,8 +296,8 @@ jobs:
               cargo build --release --bin yapp-controller
           cp target/x86_64-unknown-linux-musl/release/yapp-controller .
 
-      - name: Docker buildx and push with base features
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
+        id: build
         with:
           context: .
           cache-from: type=gha,scope=base
@@ -309,6 +307,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
 
+#      # Signing image is broken
+#      - name: Install cosign
+#        if: ${{ inputs.push }}
+#        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+#      - name: Keyless signing of image
+#        if: ${{ inputs.push }}
+#        run: |
+#          cosign sign --yes ${{ inputs.image }}@${{ steps.build.outputs.digest }}
+#      - name: Verify the image signing
+#        if: ${{ inputs.push }}
+#        run: |
+#          cosign verify ${{ inputs.image }}@${{ steps.build.outputs.digest }} \
+#            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
+#            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" | jq .
+
       - name: Persist base image build to a tarball
         uses: docker/build-push-action@v6
         with:
@@ -317,6 +330,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha,scope=base
           outputs: type=docker,dest=/tmp/image.tar
+
 
       - name: Upload base docker image as artifact for e2e tests
         uses: actions/upload-artifact@v4
