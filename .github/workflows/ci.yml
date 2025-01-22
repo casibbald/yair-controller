@@ -101,8 +101,6 @@ jobs:
           command: test
           args: --all-features --all
 
-
-
   #
 #  docker-otel:
 #    runs-on: ubuntu-latest
