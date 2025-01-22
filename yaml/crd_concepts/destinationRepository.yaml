@@ -1,0 +1,17 @@
+---
+apiVersion: replicator.yapp.example.com/v1alpha1
+kind: DestinationRepository
+metadata:
+  namespace: my-team
+  labels:
+    env: prod
+    app: my-team-app
+  name: my-team-app-promotion
+spec:
+  repository:
+    name: sam-docker-registry
+    location: europe-west1
+    format: Docker
+    projectID: example-app-prod-x3
+    Provider: GCP
+    serviceAccount: example-app-prod-x3-service-account
