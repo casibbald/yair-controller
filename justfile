@@ -35,19 +35,16 @@ test-telemetry:
 
 # compile for musl (for docker image)
 compile features="":
-  #!/usr/bin/env bash
-  docker run --rm \
-    -v cargo-cache:/root/.cargo \
-    -v $PWD:/volume \
-    -w /volume \
-    -t clux/muslrust:stable \
-    cargo build --release --features={{features}} --bin controller
-  cp target/x86_64-unknown-linux-musl/release/controller .
+  cargo build --release --features={{features}} --bin yapp-controller
+  cp target/release/yapp-controller .
+
+package: compile
+  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
 
 [private]
 _build features="":
   just compile {{features}}
-  docker build -t clux/controller:local .
+  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
 
 # docker build base
 build-base: (_build "")
