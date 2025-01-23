@@ -1,12 +1,8 @@
 ## yapp-rs
 [![ci](https://github.com/casibbald/yapp/actions/workflows/ci.yml/badge.svg)](https://github.com/casibbald/yapp/actions/workflows/ci.yml)
 
-[//]: # ([![docker image]&#40;https://img.shields.io/docker/pulls/clux/controller.svg&#41;]&#40;)
-[//]: # (https://hub.docker.com/r/clux/controller/tags/&#41;)
+A kubernetes controller to handle promotions of images for air gapped environments.
 
-A rust kubernetes reference controller for a [`Document` resource](https://github.com/casibbald/yapp/blob/main/yaml/crd.yaml) using [kube](https://github.com/kube-rs/kube/), with observability instrumentation.
-
-The `Controller` object reconciles `Document` instances when changes to it are detected, writes to its `.status` object, creates associated events, and uses finalizers for guaranteed delete handling.
 
 ## Installation
 
