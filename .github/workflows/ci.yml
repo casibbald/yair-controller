@@ -30,13 +30,6 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt,clippy
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: actions/cache@v4
         with:
           path: |
@@ -256,6 +249,11 @@ jobs:
     timeout-minutes: 10
     needs: [lint, test]
     runs-on: ubuntu-latest
+    env:
+      RUST_TOOLCHAIN: nightly
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Unshallow
@@ -263,6 +261,13 @@ jobs:
         run: |
           git fetch --prune --unshallow
           git fetch --tags -f
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/cache@v4
         with:
@@ -285,7 +290,7 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: casibbald/yapp-controller
+          images: weaveworks/yapp-controller
           tags: |
             type=pep440,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
