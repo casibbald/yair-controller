@@ -249,6 +249,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Unshallow
+        if: ${{ inputs.ref != '' }}
+        run: |
+          git fetch --prune --unshallow
+          git fetch --tags -f
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       # Build and push with docker buildx
       - name: Setup docker buildx
@@ -258,32 +272,29 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: clux/controller
+          images: casibbald/yapp-controller
           tags: |
             type=pep440,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=pr
+          labels: |
+            maintainer=casibbald
+            org.opencontainers.image.title='YAPP Controller'
+            org.opencontainers.image.description='Yet Another Pipeline Pusher'
+            org.opencontainers.image.vendor='Acme Corporation'
+            org.opencontainers.image.license='Apache-2.0'
+
+      - name: Bake
+        uses: docker/bake-action@v6
+        with:
+          files: |
+            ./docker-bake.hcl
+            cwd://${{ steps.meta.outputs.bake-file }}
+          targets: build
 
       - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
-
-      #
-      #      - name: Docker login on main origin
-      #        uses: docker/login-action@v3
-      #        if: github.event_name != 'pull_request'
-      #        with:
-      #          username: ${{ secrets.DOCKERHUB_USERNAME }}
-      #          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      #
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Compile base features
         run: |
@@ -296,31 +307,54 @@ jobs:
               cargo build --release --bin yapp-controller
           cp target/x86_64-unknown-linux-musl/release/yapp-controller .
 
+      - name: Set build-time flags
+        run: |
+          echo "LDFLAGS=$(make echo-ldflags)" >> $GITHUB_ENV
+          echo "FLUX_VERSION=$(make echo-flux-version)" >> $GITHUB_ENV
+      - uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+        id: meta
+        with:
+          images: ${{ inputs.image }}
+          tags: ${{ inputs.tags }}
+          flavor: ${{ inputs.flavor }}
+
+      - name: setup qemu
+        if: ${{ inputs.platforms != '' }}
+        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
+      - uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
+      - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: docker/build-push-action@v6
         id: build
         with:
           context: .
+          platforms: ${{ inputs.platforms }}
           cache-from: type=gha,scope=base
           cache-to: type=gha,scope=base,mode=max
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64
 
-#      # Signing image is broken
-#      - name: Install cosign
+      # Signing image is broken
+      - name: Install cosign
 #        if: ${{ inputs.push }}
-#        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
-#      - name: Keyless signing of image
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+      - name: Keyless signing of image
 #        if: ${{ inputs.push }}
-#        run: |
-#          cosign sign --yes ${{ inputs.image }}@${{ steps.build.outputs.digest }}
-#      - name: Verify the image signing
+        run: |
+          cosign sign --yes ${{ inputs.image }}@${{ steps.build.outputs.digest }}
+      - name: Verify the image signing
 #        if: ${{ inputs.push }}
-#        run: |
-#          cosign verify ${{ inputs.image }}@${{ steps.build.outputs.digest }} \
-#            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
-#            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" | jq .
+        run: |
+          cosign verify ${{ inputs.image }}@${{ steps.build.outputs.digest }} \
+            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" | jq .
 
       - name: Persist base image build to a tarball
         uses: docker/build-push-action@v6
@@ -331,9 +365,8 @@ jobs:
           cache-from: type=gha,scope=base
           outputs: type=docker,dest=/tmp/image.tar
 
-
       - name: Upload base docker image as artifact for e2e tests
         uses: actions/upload-artifact@v4
         with:
-          name: controller-image
+          name: yapp-controller-image
           path: /tmp/image.tar
