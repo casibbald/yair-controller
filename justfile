@@ -35,8 +35,8 @@ test-telemetry:
 
 # compile for musl (for docker image)
 compile features="":
-  cargo build --release --target aarch64-apple-darwin --features={{features}} --bin yapp-controller
-  cp target/aarch64-apple-darwin/release/yapp-controller .
+  cargo build --release --features={{features}} --bin yapp-controller
+  cp target/release/yapp-controller .
 
 package: compile
   docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
