@@ -59,6 +59,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
@@ -305,6 +315,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Compile base features
         run: |
