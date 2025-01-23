@@ -116,7 +116,7 @@ jobs:
 #        uses: docker/metadata-action@v5
 #        id: meta
 #        with:
-#          images: casibbald/yapp-controller
+#          images: weaveworks/yapp-controller
 #          tags: |
 #            type=pep440,pattern={{version}},prefix=otel-
 #            type=raw,value=otel,enable={{is_default_branch}}
@@ -296,7 +296,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=pr
           labels: |
-            maintainer=casibbald
+            maintainer=weaveworks
             org.opencontainers.image.title='YAPP Controller'
             org.opencontainers.image.description='Yet Another Pipeline Pusher'
             org.opencontainers.image.vendor='Acme Corporation'

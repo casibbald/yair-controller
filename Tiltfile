@@ -12,7 +12,7 @@ print("compiling with features: {}".format(features))
 
 local_resource('compile', 'just compile %s' % features)
 local_resource('test', 'just test-unit')
-docker_build('casibbald/yapp-controller', '.', dockerfile='Dockerfile')
+docker_build('weaveworks/yapp-controller', '.', dockerfile='Dockerfile')
 # k8s_yaml('yaml/crd.yaml')
 k8s_yaml('yaml/deployment.yaml')
 k8s_resource('yapp-controller', port_forwards=8080)
