@@ -8,7 +8,7 @@ permissions:
 jobs:
   automerge:
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'weaveworks' || github.actor == 'dependabot[bot]' }}
+    if: ${{ github.actor == 'microscaler' || github.actor == 'dependabot[bot]' }}
     steps:
       - name: Dependabot metadata
         id: metadata

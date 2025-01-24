@@ -139,7 +139,7 @@ spec:
         {}
       containers:
         - name: yapp-controller
-          image: weaveworks/yapp-controller:0.1.0
+          image: microscaler/yapp-controller:0.1.0
           imagePullPolicy: IfNotPresent
           securityContext:
             {}
