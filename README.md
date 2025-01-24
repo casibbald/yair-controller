@@ -1,5 +1,5 @@
 ## yapp-rs
-[![ci](https://github.com/microscaler/yapp/actions/workflows/ci.yml/badge.svg)](https://github.com/microscaler/yapp/actions/workflows/ci.yml)
+[![ci](https://github.com/casibbald/yapp/actions/workflows/ci.yml/badge.svg)](https://github.com/casibbald/yapp/actions/workflows/ci.yml)
 
 A kubernetes controller to handle promotions of images for air gapped environments.
 

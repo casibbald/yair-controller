@@ -3,21 +3,20 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     labels:
       - "dependencies"
     groups:
       artifact-io:
         patterns:
-          - actions/upload-artifact
-          - actions/download-artifact
+          - actions/*
 
   - package-ecosystem: "cargo"
     directory: "/"
     labels:
       - "dependencies"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     groups:
       kube:
         patterns:

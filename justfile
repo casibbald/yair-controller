@@ -39,12 +39,12 @@ compile features="":
   cp target/release/yapp-controller .
 
 package: compile
-  docker buildx build --platform linux/amd64,linux/arm64 -t microscaler/yapp-controller:local .
+  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
 
 [private]
 _build features="":
   just compile {{features}}
-  docker buildx build --platform linux/amd64,linux/arm64 -t microscaler/yapp-controller:local .
+  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
 
 # docker build base
 build-base: (_build "")
