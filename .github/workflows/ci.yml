@@ -11,7 +11,8 @@ on:
 
 env:
   RUST_TOOLCHAIN: nightly
-
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   clippy:
@@ -58,6 +59,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
@@ -115,7 +126,7 @@ jobs:
 #        uses: docker/metadata-action@v5
 #        id: meta
 #        with:
-#          images: casibbald/yapp-controller
+#          images: ${{ github.repository_owner }}/yapp-controller
 #          tags: |
 #            type=pep440,pattern={{version}},prefix=otel-
 #            type=raw,value=otel,enable={{is_default_branch}}
@@ -248,6 +259,11 @@ jobs:
     timeout-minutes: 10
     needs: [lint, test]
     runs-on: ubuntu-latest
+    env:
+      RUST_TOOLCHAIN: nightly
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Unshallow
@@ -255,6 +271,13 @@ jobs:
         run: |
           git fetch --prune --unshallow
           git fetch --tags -f
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/cache@v4
         with:
@@ -277,13 +300,13 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: casibbald/yapp-controller
+          images: ${{ github.repository_owner }}/yapp-controller
           tags: |
             type=pep440,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=pr
           labels: |
-            maintainer=casibbald
+            maintainer=${{ github.repository_owner }}
             org.opencontainers.image.title='YAPP Controller'
             org.opencontainers.image.description='Yet Another Pipeline Pusher'
             org.opencontainers.image.vendor='Acme Corporation'
@@ -292,6 +315,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Compile base features
         run: |
