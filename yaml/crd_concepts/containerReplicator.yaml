@@ -1,6 +1,6 @@
 ---
 apiVersion: replicator.yapp.example.com/v1alpha1
-kind: ContainerPromotionReplicator
+kind: ContainerReplicator
 metadata:
   namespace: my-team
   labels:

@@ -6,14 +6,16 @@ version: "" # pin a specific version
 image:
   repository: casibbald/yapp-controller
   pullPolicy: IfNotPresent
+  tag: latest
 
 imagePullSecrets: []
 
 serviceAccount:
   create: true
   annotations: {}
+  automount: true
+  name: ""
 podAnnotations: {}
-
 podSecurityContext: {}
   # fsGroup: 2000
 securityContext: {}
@@ -66,5 +68,5 @@ resources:
 
 serviceMonitor:
   enabled: false
-  path: /metrics
+  path: /api/metrics
   scheme: http

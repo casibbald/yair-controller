@@ -58,7 +58,6 @@ insta = { version = "*", features = ["redactions", "yaml", "filters"] }
 assert-json-diff = "2.0.2"
 hyper = "1"
 tower-test = "0.4.0"
-cargo-kcov = "0.5.2"
 
 
 [dependencies.kube]

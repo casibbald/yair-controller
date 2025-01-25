@@ -52,7 +52,7 @@ spec:
         {{- end }}
         readinessProbe:
           httpGet:
-            path: /health
+            path: /api/health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5

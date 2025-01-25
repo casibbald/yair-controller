@@ -1,7 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::unnecessary_struct_initialization)]
 #![allow(clippy::unused_async)]
-use crate::controllers::lib::{LocoErrorExt, kubecontroller::Document};
+use crate::core::{LocoErrorExt, kubecontroller::Document};
 use axum::debug_handler;
 use kube::ResourceExt;
 use loco_rs::{Error as LocoError, prelude::*};

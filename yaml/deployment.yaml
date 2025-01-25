@@ -8,7 +8,7 @@ metadata:
   labels:
     app: yapp-controller
     app.kubernetes.io/name: yapp-controller
-    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/version: "latest"
 spec:
   podSelector:
     matchLabels:
@@ -58,8 +58,19 @@ metadata:
   labels:
     app: yapp-controller
     app.kubernetes.io/name: yapp-controller
-    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/version: "latest"
   namespace: default
+automountServiceAccountToken: true
+---
+# Source: yapp-controller/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: yapp-controller
+  labels:
+    app: yapp-controller
+    app.kubernetes.io/name: yapp-controller
+    app.kubernetes.io/version: "latest"
 automountServiceAccountToken: true
 ---
 # Source: yapp-controller/templates/rbac.yaml
@@ -101,7 +112,7 @@ metadata:
   labels:
     app: yapp-controller
     app.kubernetes.io/name: yapp-controller
-    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/version: "latest"
 spec:
   type: ClusterIP
   ports:
@@ -121,7 +132,7 @@ metadata:
   labels:
     app: yapp-controller
     app.kubernetes.io/name: yapp-controller
-    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/version: "latest"
 spec:
   replicas: 1
   selector:
@@ -139,7 +150,7 @@ spec:
         {}
       containers:
       - name: yapp-controller
-        image: casibbald/yapp-controller:0.1.0
+        image: casibbald/yapp-controller:latest
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
@@ -159,7 +170,7 @@ spec:
           value: info,kube=debug,controller=debug
         readinessProbe:
           httpGet:
-            path: /health
+            path: /api/health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5

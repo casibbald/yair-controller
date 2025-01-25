@@ -11,8 +11,6 @@ on:
 
 env:
   RUST_TOOLCHAIN: nightly
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   clippy:
@@ -154,157 +152,39 @@ jobs:
       - name: Output crd.yaml
         run: cat yaml/doc_crds/crd.yaml
 
-  #
-#  docker-otel:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      # Build and push with docker buildx
-#      - name: Setup docker buildx
-#        uses: docker/setup-buildx-action@v3
-#
-#      - name: Configure tags based on git tags for otel
-#        uses: docker/metadata-action@v5
-#        id: meta
-#        with:
-#          images: ${{ github.repository_owner }}/yapp-controller
-#          tags: |
-#            type=pep440,pattern={{version}},prefix=otel-
-#            type=raw,value=otel,enable={{is_default_branch}}
-#            type=ref,event=pr,prefix=otel-
-#
-#      - uses: actions/cache@v4
-#        with:
-#          path: |
-#            ~/.cargo/registry/index/
-#            ~/.cargo/registry/cache/
-#            ~/.cargo/git/db/
-#            target/
-#          key: musl-cargo-otel-${{ hashFiles('**/Cargo.lock') }}
-#
-#      - name: Compile with telemetry
-#        run: |
-#          mkdir -p ~/.cargo/{git,registry}
-#          docker run --rm -t \
-#              --mount type=bind,source=${{ github.workspace }},target=/volume \
-#              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
-#              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-#              clux/muslrust:${{ env.RUST_TOOLCHAIN }} \
-#              cargo build --features=telemetry --release --bin controller
-#          cp target/x86_64-unknown-linux-musl/release/controller .
-#
-#      - name: Docker login on main origin
-#        uses: docker/login-action@v3
-#        if: github.event_name != 'pull_request'
-#        with:
-#          username: ${{ secrets.DOCKERHUB_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
-#      - name: Docker buildx and push with telemetry
-#        uses: docker/build-push-action@v6
-#        with:
-#          context: .
-#          cache-from: type=gha,scope=otel
-#          cache-to: type=gha,scope=otel,mode=max
-#          push: ${{ github.ref == 'refs/heads/main' }}
-#          tags: ${{ steps.meta.outputs.tags }}
-#          labels: ${{ steps.meta.outputs.labels }}
-#          platforms: linux/amd64
-#
-#  e2e:
-#    runs-on: ubuntu-latest
-#    needs: [docker-base]
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: nolar/setup-k3d-k3s@v1
-#        with:
-#          version: v1.27
-#          k3d-name: kube
-#          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
-#      - run: kubectl apply -f yaml/crd.yaml
-#      - name: Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v3
-#      - name: Download docker image artifact from docker job
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: controller-image
-#          path: /tmp
-#      - name: Load docker image from tarball
-#        run: docker load --input /tmp/image.tar
-#      - name: helm template | kubctl apply
-#        run: |
-#          apiserver="$(kubectl get endpoints kubernetes -ojson | jq '.subsets[0].addresses[0].ip' -r)"
-#          helm template charts/doc-controller \
-#            --set version=latest \
-#            --set networkPolicy.enabled=true \
-#            --set networkPolicy.apiserver.0=${apiserver}/32 \
-#            | kubectl apply -f -
-#      - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=30s
-#      - run: kubectl apply -f yaml/instance-samuel.yaml
-#      - run: sleep 2 # TODO: add condition on status and wait for it instead
-#      # verify reconcile actions have happened
-#      - run: kubectl get netpol doc-controller -oyaml
-#      - run: kubectl logs deploy/doc-controller
-#      - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
-#      - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
-#
 
-  #  integration:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: dtolnay/rust-toolchain@${{ env.RUST_TOOLCHAIN }}
-#      - uses: Swatinem/rust-cache@v2
-#      - uses: nolar/setup-k3d-k3s@v1
-#        with:
-#          version: v1.25
-#          k3d-name: kube
-#          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
-#
-#      - name: Build workspace
-#        run: cargo build
-#      - name: Install crd
-#        run: cargo run --bin crdgen | kubectl apply -f -
-#      - name: Run all default features integration library tests
-#        run: cargo test --lib --all -- --ignored
-#
+  integration:
+    needs: [lint, test, crdgen]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - uses: nolar/setup-k3d-k3s@v1
+        with:
+          version: v1.25
+          k3d-name: kube
+          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
 
+      - name: Build workspace
+        run: cargo build
+      - name: Install crd
+        run: cargo run --bin crdgen | kubectl apply -f -
+      - name: Run all default features integration library tests
+        # run: cargo test --core --all -- --ignored # TODO correct this so it only runs core tests
+        run: cargo test --all -- --ignored
 
-#  unit:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 2
-#      - uses: dtolnay/rust-toolchain@${{ env.RUST_TOOLCHAIN }}
-#      - uses: Swatinem/rust-cache@v2
-#
-#      # Real CI work starts here
-#      - name: Build workspace
-#        run: cargo build
-#      - name: Run workspace unit tests
-#        run: cargo test
-#      - name: Generate crd.yaml
-#        run: cargo run --bin crdgen > yaml/crd.yaml
-#      - name: Generate deployment.yaml
-#        run: helm template charts/doc-controller > yaml/deployment.yaml
-#      - name: Ensure generated output is committed
-#        run: |
-#          if ! git diff --exit-code yaml/; then
-#              echo "Uncommitted changes in yaml directory"
-#              echo "Please run 'just generate' and commit the results"
-#              exit 1
-#          fi
 
   docker-base:
     timeout-minutes: 10
-    needs: [lint, test, crdgen]
+    needs: [integration]
     runs-on: ubuntu-latest
+    permissions:
+      packages: write # for docker/build-push-action to push images
+      id-token: write # for Cosign to be able to sign images with GHA token
     env:
       RUST_TOOLCHAIN: nightly
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      IMAGE_NAME: ${{ github.repository_owner }}/yapp-controller
 
     steps:
       - uses: actions/checkout@v4
@@ -314,10 +194,15 @@ jobs:
           git fetch --prune --unshallow
           git fetch --tags -f
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@327cd5a69de6c009b9ce71bce8395f28e651bf99
+#      - name: Log in to the Container registry
+#        uses: docker/login-action@327cd5a69de6c009b9ce71bce8395f28e651bf99
+#        with:
+#          username: ${{ github.repository_owner }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -342,7 +227,7 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ github.repository_owner }}/yapp-controller
+          images: ghcr.io/casibbald/yapp-controller
           tags: |
             type=pep440,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
@@ -382,33 +267,98 @@ jobs:
         id: build
         with:
           context: .
-          platforms: ${{ inputs.platforms }}
+          platforms: linux/amd64
+          cache-from: type=gha,scope=base
           cache-to: type=gha,scope=base,mode=max
           build-args: |
             GIT_COMMIT=${{ github.sha }}
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Persist base image build to a tarball
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha,scope=base
           outputs: type=docker,dest=/tmp/image.tar
-
-#      # Signing image is broken
-#      - name: Install cosign
-##        if: ${{ inputs.push }}
-#        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
-#      - name: Keyless signing of image
-##        if: ${{ inputs.push }}
-#        run: |
-#          cosign sign --yes ${{ inputs.image }}@${{ steps.build.outputs.digest }}
-#      - name: Verify the image signing
-##        if: ${{ inputs.push }}
-#        run: |
-#          cosign verify ${{ inputs.image }}@${{ steps.build.outputs.digest }} \
-#            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
-#            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" | jq .
 
       - name: Upload base docker image as artifact for e2e tests
         uses: actions/upload-artifact@v4
         with:
-          name: yapp-controller-image
+          name: yapp-controller
           path: /tmp/image.tar
+
+#  build-ghcr-publish-image:
+#    needs: [docker-base]
+#    name: Publish to GHCR.IO
+#    uses: ./.github/workflows/build-push-image.yaml
+#    with:
+#      # file: ${{ matrix.docker-image }}.dockerfile TODO: figure out how to have file per platform
+#      file: Dockerfile
+#      image: ghcr.io/${{ github.repository }}/${{ matrix.docker-image }}
+#      push: ${{ github.event_name != 'pull_request' && github.repository == 'casibbald/yapp' }}
+#      tags: |
+#        type=ref,event=branch
+#        type=ref,event=pr
+#    permissions:
+#      contents: read # for actions/checkout to fetch code
+#      id-token: write # for Cosign to be able to sign images with GHA token
+#      packages: write # for docker/build-push-action to push images
+#    strategy:
+#      matrix:
+#        docker-image:
+#          - yapp-controller
+
+
+#  e2e:
+#    runs-on: ubuntu-latest
+#    needs: [ docker-base ]
+#    steps:
+#      - run: env
+#      - uses: actions/checkout@v4
+#      - uses: nolar/setup-k3d-k3s@v1
+#        with:
+#          version: v1.27
+#          k3d-name: kube
+#          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
+#      - run: kubectl apply -f yaml/doc_crds/crd.yaml
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#      - name: Download docker image artifact from docker job
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: yapp-controller
+#          path: /tmp
+#      - name: Load docker image from tarball
+#        run: docker load --input /tmp/image.tar
+#      - name: helm template | kubctl apply
+#        run: |
+#          docker images casibbald/yapp-controller
+#          image_tag="$(docker images casibbald/yapp-controller | egrep 'yapp-controller' | awk '{print $2}' | head -1)"
+#          echo "image tag: ${image_tag}"
+#          apiserver="$(kubectl get endpoints kubernetes -ojson | jq '.subsets[0].addresses[0].ip' -r)"
+#          helm template charts/yapp-controller \
+#            --set version=latest \
+#            --set networkPolicy.enabled=true \
+#            --set networkPolicy.apiserver.0=${apiserver}/32 \
+#            --set image.repository=ghcr.io/casibbald/yapp-controller \
+#            --set image.tag=${image_tag} \
+#            | kubectl apply -f -
+#      - run: sleep 5
+#      - run: kubectl get events
+#      - run: kubectl get pods
+#      - run: kubectl describe deployment yapp-controller
+#      - run: kubectl describe pod $(kubectl get pods | egrep 'yap-controller' | awk '{print $1}')
+#      - run: kubectl logs deploy/yapp-controller
+#      - run: kubectl logs $(kubectl get pods | egrep 'yapp-controller' | awk '{print $1}' | head -1)
+#      - run: kubectl wait --for=condition=available deploy/yapp-controller --timeout=120s
+#      - run: kubectl apply -f yaml/doc_crds/instance-samuel.yaml
+#      - run: sleep 2 # TODO: add condition on status and wait for it instead
+#      # verify reconcile actions have happened
+#      - run: kubectl get netpol yapp-controller -oyaml
+#      - run: kubectl logs deploy/yapp-controller
+#      - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
+#      - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
