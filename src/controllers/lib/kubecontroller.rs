@@ -72,7 +72,9 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let _timer = ctx.metrics.reconcile.count_and_measure(&trace_id);
     ctx.diagnostics.write().await.last_event = Utc::now();
 
-    let Some(ns) = doc.namespace() else { return Err(ErrorWrapper::from_custom("Document namespace is missing")) };
+    let Some(ns) = doc.namespace() else {
+        return Err(ErrorWrapper::from_custom("Document namespace is missing"));
+    };
 
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
 
@@ -85,7 +87,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
         }
     })
     .await
-        .map_err(ErrorWrapper::from_kube)
+    .map_err(ErrorWrapper::from_kube)
 }
 
 #[allow(dead_code)]
@@ -96,7 +98,6 @@ fn error_policy(doc: &Arc<Document>, error: &LocoError, ctx: &Arc<Context>) -> A
 }
 
 impl Document {
-
     #[allow(dead_code)]
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
@@ -160,4 +161,3 @@ impl Document {
         Ok(Action::await_change())
     }
 }
-

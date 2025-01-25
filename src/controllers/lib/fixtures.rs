@@ -35,8 +35,8 @@ impl Document {
     /// Modify document to set a deletion timestamp
     #[must_use]
     pub fn needs_delete(mut self) -> Self {
-        use k8s_openapi::apimachinery::pkg::apis::meta::v1::Time;
         use chrono::prelude::{DateTime, TimeZone, Utc};
+        use k8s_openapi::apimachinery::pkg::apis::meta::v1::Time;
         let now: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 4, 2, 12, 50, 32).unwrap();
         self.meta_mut().deletion_timestamp = Some(Time(now));
         self
@@ -125,10 +125,9 @@ impl ApiServerVerifier {
                         .await
                 }
             }
-                .expect("scenario completed without errors");
+            .expect("scenario completed without errors");
         })
     }
-
 
     async fn handle_finalizer_creation(mut self, doc: Document) -> Result<Self> {
         let (request, send) = self.0.next_request().await.expect("service not called");
