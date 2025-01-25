@@ -1,4 +1,3 @@
-pub mod crdgen;
 pub mod fixtures;
 pub mod kubecontroller;
 

@@ -7,8 +7,8 @@ install-crd: generate
   kubectl apply -f yaml/crd.yaml
 
 generate:
-  cargo run --bin crdgen > yaml/crd.yaml
-  helm template charts/doc-controller > yaml/deployment.yaml
+  cargo run --bin crdgen > yaml/doc_crds/crd.yaml
+  helm template charts/yapp-controller > yaml/deployment.yaml
 
 # run with opentelemetry
 run-telemetry:

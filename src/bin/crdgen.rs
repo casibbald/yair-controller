@@ -1,4 +1,4 @@
-use crate::controllers::lib::kubecontroller;
+use yapp::controllers::kubecontroller;
 use kube::CustomResourceExt;
 
 #[allow(dead_code)]
