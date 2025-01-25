@@ -23,6 +23,10 @@ run:
 fmt:
   cargo +nightly fmt
 
+# format with nightly rustfmt
+clippy:
+  cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
+
 # run unit tests
 test-unit:
   cargo test

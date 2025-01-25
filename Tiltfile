@@ -10,6 +10,7 @@ port = 11350
 features = cfg.get('features', "")
 print("compiling with features: {}".format(features))
 
+local_resource('Pedantic as Fuck', 'just clippy')
 local_resource('compile', 'just compile %s' % features)
 local_resource('test', 'just test-unit')
 docker_build('casibbald/yapp-controller', '.', dockerfile='Dockerfile')

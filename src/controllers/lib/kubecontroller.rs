@@ -94,9 +94,10 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 }
 
 #[allow(dead_code)]
+#[allow(clippy::borrow_deref_ref)] // mutually exclusive with making tests work
 fn error_policy(doc: &Arc<Document>, error: &LocoError, ctx: &Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.reconcile.set_failure(doc, error); // `error` is now `LocoError`
+    ctx.metrics.reconcile.set_failure(&*doc, error); // `error` is now `LocoError`
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -311,7 +312,7 @@ mod test {
         let err = res.unwrap_err();
         assert!(err.to_string().contains("IllegalDocument"));
         // calling error policy with the reconciler error should cause the correct metric to be set
-        error_policy(doc.clone(), &err, testctx.clone());
+        error_policy(&doc.clone(), &err, &testctx.clone());
         let err_labels = ErrorLabels {
             instance: "illegal".into(),
             error: "finalizererror(applyfailed(illegaldocument))".into(),
