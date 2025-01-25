@@ -94,9 +94,9 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 }
 
 #[allow(dead_code)]
-fn error_policy(doc: Arc<Document>, error: &LocoError, ctx: Arc<Context>) -> Action {
+fn error_policy(doc: &Arc<Document>, error: &LocoError, ctx: &Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.reconcile.set_failure(&doc, error); // `error` is now `LocoError`
+    ctx.metrics.reconcile.set_failure(doc, error); // `error` is now `LocoError`
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -200,6 +200,8 @@ pub struct State {
 /// State wrapper around the controller outputs for the web server
 impl State {
     /// Metrics getter
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn metrics(&self) -> String {
         let mut buffer = String::new();
         let registry = &*self.metrics.registry;
@@ -224,6 +226,8 @@ impl State {
 }
 
 /// Initialize the controller and shared state (given the crd is installed)
+#[allow(clippy::missing_panics_doc)]
+#[allow(clippy::unnecessary_literal_unwrap)]
 pub async fn run(state: State) {
     let client = Client::try_default().await.expect("failed to create kube Client");
     let docs = Api::<Document>::all(client.clone());
@@ -240,13 +244,13 @@ pub async fn run(state: State) {
         .run(
             reconcile,
             |doc: Arc<Document>, error: &loco_rs::Error, ctx: Arc<kubecontroller::Context>| {
-                error_policy(doc, error, ctx)
+                error_policy(&doc, error, &ctx)
             },
             state.to_context(client).await,
         )
         .filter_map(|x| async move { std::result::Result::ok(x) })
         .for_each(|_| futures::future::ready(()))
-        .await
+        .await;
 }
 
 // Mock tests relying on fixtures.rs and its primitive apiserver mocks
