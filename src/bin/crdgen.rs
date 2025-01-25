@@ -1,5 +1,5 @@
-use yapp::controllers::kubecontroller;
 use kube::CustomResourceExt;
+use yapp::controllers::kubecontroller;
 
 #[allow(dead_code)]
 fn main() {

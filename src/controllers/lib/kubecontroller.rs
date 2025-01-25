@@ -234,7 +234,7 @@ pub async fn run(state: State) {
     let docs = Api::<Document>::all(client.clone());
     if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
         Err::<(), loco_rs::Error>(ErrorWrapper::from_custom(&format!(
-          "CRD is not queryable; {e:?}. Is the CRD installed?"
+            "CRD is not queryable; {e:?}. Is the CRD installed?"
         )))
         .expect("TODO: panic message");
         info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
