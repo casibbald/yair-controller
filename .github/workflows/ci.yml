@@ -54,6 +54,7 @@ jobs:
 
   lint:
     needs: [clippy]
+    name: Run Pedantic Linter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
