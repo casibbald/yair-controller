@@ -114,7 +114,7 @@ jobs:
 
   crdgen:
     needs : [clippy]
-    name: Run Tests
+    name: CRD Generator
     runs-on: ubuntu-latest
 
     permissions:
