@@ -7,7 +7,7 @@ A kubernetes controller to handle promotions of images for air gapped environmen
 ## Installation
 
 ### CRD
-Apply the CRD from [cached file](yaml/crd.yaml), or pipe it from `crdgen` to pickup schema changes:
+Apply the CRD from [cached file](yaml/doc_crds/crd.yaml), or pipe it from `crdgen` to pickup schema changes:
 
 ```sh
 cargo run --bin crdgen | kubectl apply -f -

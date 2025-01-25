@@ -7,8 +7,8 @@ install-crd: generate
   kubectl apply -f yaml/crd.yaml
 
 generate:
-  cargo run --bin crdgen > yaml/crd.yaml
-  helm template charts/doc-controller > yaml/deployment.yaml
+  cargo run --bin crdgen > yaml/doc_crds/crd.yaml
+  helm template --release-name 'tilt' charts/yapp-controller > yaml/deployment.yaml
 
 # run with opentelemetry
 run-telemetry:
@@ -21,7 +21,12 @@ run:
 
 # format with nightly rustfmt
 fmt:
-  cargo +nightly fmt
+  cargo +nightly fmt --all -- --check
+
+
+# format with nightly rustfmt
+clippy:
+  cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
 
 # run unit tests
 test-unit:

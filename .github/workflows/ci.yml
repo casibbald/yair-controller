@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - ^issues\/[0-9]{1,2}$
+      - ^issues\/[0-9]{1,2}(-[0-9]{1,2}?)$
     tags:
       - '*'
 
@@ -54,6 +54,7 @@ jobs:
 
   lint:
     needs: [clippy]
+    name: Run Pedantic Linter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,6 +112,47 @@ jobs:
         with:
           command: test
           args: --all-features --all
+
+  crdgen:
+    needs : [clippy]
+    name: CRD Generator
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt,clippy
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args:
+
+      - uses: extractions/setup-just@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: test generate crds
+        run: just generate
+
+      - name: Output crd.yaml
+        run: cat yaml/doc_crds/crd.yaml
 
   #
 #  docker-otel:
@@ -257,7 +299,7 @@ jobs:
 
   docker-base:
     timeout-minutes: 10
-    needs: [lint, test]
+    needs: [lint, test, crdgen]
     runs-on: ubuntu-latest
     env:
       RUST_TOOLCHAIN: nightly

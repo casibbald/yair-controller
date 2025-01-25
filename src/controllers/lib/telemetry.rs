@@ -6,11 +6,11 @@ use opentelemetry::trace::{TraceId, TracerProvider};
 use opentelemetry_sdk::{Resource, runtime, trace as sdktrace, trace::Config};
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 
-
-#[derive(Default)]
-pub struct Diagnostics {
-    pub last_event: DateTime<Utc>,
-}
+//
+// #[derive(Default)]
+// pub struct Diagnostics {
+//     pub last_event: DateTime<Utc>,
+// }
 
 #[must_use]
 pub fn get_trace_id() -> TraceId {
