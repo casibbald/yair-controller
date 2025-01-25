@@ -96,7 +96,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 #[allow(dead_code)]
 fn error_policy(doc: Arc<Document>, error: &LocoError, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.reconcile.set_failure(&*doc, error); // `error` is now `LocoError`
+    ctx.metrics.reconcile.set_failure(&doc, error); // `error` is now `LocoError`
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -229,7 +229,7 @@ pub async fn run(state: State) {
     let docs = Api::<Document>::all(client.clone());
     if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
         Err::<(), loco_rs::Error>(ErrorWrapper::from_custom(&format!(
-            "CRD is not queryable; {e:?}. Is the CRD installed?"
+          "CRD is not queryable; {e:?}. Is the CRD installed?"
         )))
         .expect("TODO: panic message");
         info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
