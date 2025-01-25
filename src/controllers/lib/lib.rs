@@ -1,6 +1,6 @@
 #![allow(unused_imports, unused_variables)]
-use loco_rs::{Error as LocoError};
 use kube::runtime::finalizer::Error;
+use loco_rs::Error as LocoError;
 use serde_json;
 
 /// Unified Result type using loco_rs::Error

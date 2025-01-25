@@ -1,12 +1,10 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::unnecessary_struct_initialization)]
 #![allow(clippy::unused_async)]
+use crate::controllers::lib::{LocoErrorExt, kubecontroller::Document};
 use axum::debug_handler;
-use loco_rs::prelude::*;
-use crate::controllers::lib::LocoErrorExt;
-use loco_rs::Error as LocoError;
-use crate::controllers::lib::kubecontroller::Document;
 use kube::ResourceExt;
+use loco_rs::{Error as LocoError, prelude::*};
 use opentelemetry::trace::TraceId;
 use prometheus_client::{
     encoding::EncodeLabelSet,

@@ -2,9 +2,12 @@
 #![allow(clippy::unnecessary_struct_initialization)]
 #![allow(clippy::unused_async)]
 #![allow(unused_imports, unused_variables)]
-use crate::controllers::{lib::{telemetry::Diagnostics}, metrics::Metrics, telemetry};
+use crate::controllers::{
+    lib::{ErrorWrapper, LocoErrorExt, Result, telemetry::Diagnostics},
+    metrics::Metrics,
+    telemetry,
+};
 use loco_rs::Error as LocoError;
-use crate::controllers::lib::{Result, ErrorWrapper, LocoErrorExt};
 
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
@@ -89,8 +92,8 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
             Finalizer::Cleanup(doc) => doc.cleanup(ctx.clone()).await,
         }
     })
-        .await
-        .map_err(|e| ErrorWrapper::from_kube(e))
+    .await
+    .map_err(|e| ErrorWrapper::from_kube(e))
 }
 
 fn error_policy(doc: Arc<Document>, error: &LocoError, ctx: Arc<Context>) -> Action {

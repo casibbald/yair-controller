@@ -1,9 +1,7 @@
 //! Helper methods only available for tests
-use crate::controllers::lib::kubecontroller::{
-    Context, DOCUMENT_FINALIZER, Document, DocumentSpec, DocumentStatus,
-};
 use crate::controllers::lib::{
     Result,
+    kubecontroller::{Context, DOCUMENT_FINALIZER, Document, DocumentSpec, DocumentStatus},
 };
 use assert_json_diff::assert_json_include;
 use http::{Request, Response};
