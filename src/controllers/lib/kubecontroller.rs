@@ -32,7 +32,6 @@ use tracing::{Callsite, Span, Subscriber, Value, field, info, instrument, warn};
 pub static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema, Default)]
-#[cfg_attr(test, derive(Default))]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
 #[kube(status = "DocumentStatus", shortname = "doc")]
 pub struct DocumentSpec {
