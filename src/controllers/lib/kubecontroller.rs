@@ -27,11 +27,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
-use tracing::*;
+use tracing::{Callsite, Span, Subscriber, Value, field, info, instrument, warn};
 
 pub static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 
-/// Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema, Default)]
 #[cfg_attr(test, derive(Default))]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
@@ -42,28 +41,24 @@ pub struct DocumentSpec {
     pub content: String,
 }
 
-/// The status object of `Document`
+
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
 pub struct DocumentStatus {
     pub hidden: bool,
 }
 
 impl Document {
+    #[allow(dead_code)]
     fn was_hidden(&self) -> bool {
-        self.status.as_ref().map(|s| s.hidden).unwrap_or(false)
+        self.status.as_ref().is_some_and(|s| s.hidden)
     }
 }
 
-// Context for our reconciler
 #[derive(Clone)]
 pub struct Context {
-    /// Kubernetes client
     pub client: Client,
-    /// Event recorder
     pub recorder: Recorder,
-    /// Diagnostics read by the web server
     pub diagnostics: Arc<RwLock<Diagnostics>>,
-    /// Prometheus metrics
     pub metrics: Arc<Metrics>,
 }
 
@@ -77,10 +72,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let _timer = ctx.metrics.reconcile.count_and_measure(&trace_id);
     ctx.diagnostics.write().await.last_event = Utc::now();
 
-    let ns = match doc.namespace() {
-        Some(ns) => ns,
-        None => return Err(ErrorWrapper::from_custom("Document namespace is missing")),
-    };
+    let Some(ns) = doc.namespace() else { return Err(ErrorWrapper::from_custom("Document namespace is missing")) };
 
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
 
@@ -93,27 +85,28 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
         }
     })
     .await
-    .map_err(|e| ErrorWrapper::from_kube(e))
+        .map_err(ErrorWrapper::from_kube)
 }
 
-fn error_policy(doc: Arc<Document>, error: &LocoError, ctx: Arc<Context>) -> Action {
+#[allow(dead_code)]
+fn error_policy(doc: &Arc<Document>, error: &LocoError, ctx: &Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.reconcile.set_failure(&doc, error); // `error` is now `LocoError`
+    ctx.metrics.reconcile.set_failure(doc, error); // `error` is now `LocoError`
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
 impl Document {
-    // Reconcile (for non-finalizer related changes)
+
+    #[allow(dead_code)]
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
         let oref = self.object_ref(&());
         let ns = self.namespace().unwrap();
         let name = self.name_any();
-        let docs: Api<Document> = Api::namespaced(client, &ns);
+        let docs: Api<Self> = Api::namespaced(client, &ns);
 
         let should_hide = self.spec.hide;
         if !self.was_hidden() && should_hide {
-            // send an event once per hide
             ctx.recorder
                 .publish(
                     &Event {
@@ -126,12 +119,12 @@ impl Document {
                     &oref,
                 )
                 .await
-                .map_err(|e| ErrorWrapper::from_kube(e))?;
+                .map_err(ErrorWrapper::from_kube)?;
         }
         if name == "illegal" {
-            return Err(ErrorWrapper::from_custom("IllegalDocument")); // error names show up in metrics
+            return Err(ErrorWrapper::from_custom("IllegalDocument"));
         }
-        // always overwrite status object with what we saw
+
         let new_status = Patch::Apply(json!({
             "apiVersion": "kube.rs/v1",
             "kind": "Document",
@@ -143,16 +136,14 @@ impl Document {
         let _o = docs
             .patch_status(&name, &ps, &new_status)
             .await
-            .map_err(|e| ErrorWrapper::from_kube(e))?;
+            .map_err(ErrorWrapper::from_kube);
 
-        // If no events were received, check back every 5 minutes
         Ok(Action::requeue(Duration::from_secs(5 * 60)))
     }
 
-    // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
+    #[allow(dead_code)]
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
         let oref = self.object_ref(&());
-        // Document doesn't have any real cleanup, so we just publish an event
         ctx.recorder
             .publish(
                 &Event {
@@ -170,4 +161,3 @@ impl Document {
     }
 }
 
-// Diagnostics and State remain unchanged.

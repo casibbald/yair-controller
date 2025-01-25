@@ -12,10 +12,10 @@ pub struct Diagnostics {
     pub last_event: DateTime<Utc>,
 }
 
-///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
+#[must_use]
 pub fn get_trace_id() -> TraceId {
-    use opentelemetry::trace::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
-    use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
+    use opentelemetry::trace::TraceContextExt as _;
+    use tracing_opentelemetry::OpenTelemetrySpanExt as _;
     tracing::Span::current()
         .context()
         .span()
@@ -51,7 +51,9 @@ fn init_tracer() -> sdktrace::Tracer {
     provider.tracer("tracing-otel-subscriber")
 }
 
-/// Initialize tracing
+
+#[allow(clippy::or_fun_call)]
+#[allow(clippy::unused_async)]
 pub async fn init() {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
@@ -62,7 +64,6 @@ pub async fn init() {
         .or(EnvFilter::try_new("info"))
         .unwrap();
 
-    // Decide on layers
     let reg = Registry::default();
     #[cfg(feature = "telemetry")]
     reg.with(env_filter).with(logger).with(otel).init();

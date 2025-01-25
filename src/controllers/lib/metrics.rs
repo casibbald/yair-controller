@@ -48,7 +48,8 @@ pub struct TraceLabel {
 impl TryFrom<&TraceId> for TraceLabel {
     type Error = anyhow::Error;
 
-    fn try_from(id: &TraceId) -> Result<TraceLabel, Self::Error> {
+    #[allow(clippy::redundant_else)]
+    fn try_from(id: &TraceId) -> Result<Self, Self::Error> {
         if std::matches!(id, &TraceId::INVALID) {
             anyhow::bail!("invalid trace id")
         } else {
@@ -82,7 +83,7 @@ pub struct ErrorLabels {
 }
 
 impl ReconcileMetrics {
-    /// Register API metrics to start tracking them.
+    #[must_use]
     pub fn register(self, r: &mut Registry) -> Self {
         r.register_with_unit(
             "duration",
@@ -104,6 +105,7 @@ impl ReconcileMetrics {
             .inc();
     }
 
+    #[must_use]
     pub fn count_and_measure(&self, trace_id: &TraceId) -> ReconcileMeasurer {
         self.runs.inc();
         ReconcileMeasurer {
@@ -114,9 +116,7 @@ impl ReconcileMetrics {
     }
 }
 
-/// Smart function duration measurer
-///
-/// Relies on Drop to calculate duration and register the observation in the histogram
+
 pub struct ReconcileMeasurer {
     start: Instant,
     labels: Option<TraceLabel>,

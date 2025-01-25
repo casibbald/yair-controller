@@ -3,13 +3,12 @@ use kube::runtime::finalizer::Error;
 use loco_rs::Error as LocoError;
 use serde_json;
 
-/// Unified Result type using loco_rs::Error
 pub type Result<T> = std::result::Result<T, LocoError>;
 
-/// Utility for creating and converting errors
 pub struct ErrorWrapper;
 
 impl ErrorWrapper {
+    #[must_use]
     pub fn from_serde(err: serde_json::Error) -> LocoError {
         LocoError::wrap(err)
     }
@@ -21,18 +20,18 @@ impl ErrorWrapper {
         LocoError::wrap(err)
     }
 
+    #[must_use]
     pub fn from_custom(err: &str) -> LocoError {
         LocoError::wrap(std::io::Error::new(std::io::ErrorKind::Other, err))
     }
 }
 
-/// Extend loco_rs::Error with utility methods
 pub trait LocoErrorExt {
     fn metric_label(&self) -> String;
 }
 
 impl LocoErrorExt for LocoError {
     fn metric_label(&self) -> String {
-        format!("{:?}", self).to_lowercase()
+        format!("{self:?}").to_lowercase()
     }
 }

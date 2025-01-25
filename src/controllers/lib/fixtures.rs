@@ -10,42 +10,48 @@ use std::sync::Arc;
 
 impl Document {
     /// A document that will cause the reconciler to fail
+    #[allow(clippy::must_use_candidate)]
     pub fn illegal() -> Self {
-        let mut d = Document::new("illegal", DocumentSpec::default());
+        let mut d = Self::new("illegal", DocumentSpec::default());
         d.meta_mut().namespace = Some("default".into());
         d
     }
 
     /// A normal test document
+    #[must_use]
     pub fn test() -> Self {
-        let mut d = Document::new("test", DocumentSpec::default());
+        let mut d = Self::new("test", DocumentSpec::default());
         d.meta_mut().namespace = Some("default".into());
         d
     }
 
     /// Modify document to be set to hide
-    pub fn needs_hide(mut self) -> Self {
+    #[must_use]
+    pub const fn needs_hide(mut self) -> Self {
         self.spec.hide = true;
         self
     }
 
     /// Modify document to set a deletion timestamp
+    #[must_use]
     pub fn needs_delete(mut self) -> Self {
-        use chrono::prelude::{DateTime, TimeZone, Utc};
-        let now: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
         use k8s_openapi::apimachinery::pkg::apis::meta::v1::Time;
+        use chrono::prelude::{DateTime, TimeZone, Utc};
+        let now: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 4, 2, 12, 50, 32).unwrap();
         self.meta_mut().deletion_timestamp = Some(Time(now));
         self
     }
 
     /// Modify a document to have the expected finalizer
+    #[must_use]
     pub fn finalized(mut self) -> Self {
         self.finalizers_mut().push(DOCUMENT_FINALIZER.to_string());
         self
     }
 
     /// Modify a document to have an expected status
-    pub fn with_status(mut self, status: DocumentStatus) -> Self {
+    #[must_use]
+    pub const fn with_status(mut self, status: DocumentStatus) -> Self {
         self.status = Some(status);
         self
     }
@@ -55,7 +61,7 @@ impl Document {
 type ApiServerHandle = tower_test::mock::Handle<Request<Body>, Response<Body>>;
 pub struct ApiServerVerifier(ApiServerHandle);
 
-/// Scenarios we test for in ApiServerVerifier
+/// Scenarios we test for in `ApiServerVerifier`
 pub enum Scenario {
     /// objects without finalizers will get a finalizer applied (and not call the apply loop)
     FinalizerCreation(Document),
@@ -73,7 +79,7 @@ pub async fn timeout_after_1s(handle: tokio::task::JoinHandle<()>) {
     tokio::time::timeout(std::time::Duration::from_secs(1), handle)
         .await
         .expect("timeout on mock apiserver")
-        .expect("scenario succeeded")
+        .expect("scenario succeeded");
 }
 
 impl ApiServerVerifier {
@@ -87,6 +93,7 @@ impl ApiServerVerifier {
     /// You should await the `JoinHandle` (with a timeout) from this function to ensure that the
     /// scenario runs to completion (i.e. all expected calls were responded to),
     /// using the timeout to catch missing api calls to Kubernetes.
+    #[must_use]
     pub fn run(self, scenario: Scenario) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             // moving self => one scenario per test
@@ -113,7 +120,6 @@ impl ApiServerVerifier {
         })
     }
 
-    // chainable scenario handlers
 
     async fn handle_finalizer_creation(mut self, doc: Document) -> Result<Self> {
         let (request, send) = self.0.next_request().await.expect("service not called");
@@ -172,7 +178,7 @@ impl ApiServerVerifier {
             request.uri().to_string(),
             format!("/apis/events.k8s.io/v1/namespaces/default/events?")
         );
-        // verify the event reason matches the expected
+
         let req_body = request.into_body().collect_bytes().await.unwrap();
         let postdata: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid event from runtime");
@@ -181,7 +187,7 @@ impl ApiServerVerifier {
             postdata.get("reason").unwrap().as_str().map(String::from),
             Some(reason)
         );
-        // then pass through the body
+
         send.send_response(Response::builder().body(Body::from(req_body)).unwrap());
         Ok(self)
     }
@@ -209,7 +215,7 @@ impl ApiServerVerifier {
 }
 
 impl Context {
-    // Create a test context with a mocked kube client, locally registered metrics and default diagnostics
+    #[must_use]
     pub fn test() -> (Arc<Self>, ApiServerVerifier) {
         let (mock_service, handle) = tower_test::mock::pair::<Request<Body>, Response<Body>>();
         let mock_client = Client::new(mock_service, "default");
