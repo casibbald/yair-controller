@@ -151,6 +151,9 @@ jobs:
       - name: test generate crds
         run: just generate
 
+      - name: Output crd.yaml
+        run: cat yaml/doc_crds/crd.yaml
+
   #
 #  docker-otel:
 #    runs-on: ubuntu-latest
