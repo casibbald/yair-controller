@@ -75,6 +75,11 @@ pub enum Scenario {
     Cleanup(String, Document),
 }
 
+/// Runs the given handle with a timeout of 1 second.
+///
+/// # Panics
+///
+/// This function will panic if the timeout is reached or if the scenario fails.
 pub async fn timeout_after_1s(handle: tokio::task::JoinHandle<()>) {
     tokio::time::timeout(std::time::Duration::from_secs(1), handle)
         .await
@@ -93,10 +98,14 @@ impl ApiServerVerifier {
     /// You should await the `JoinHandle` (with a timeout) from this function to ensure that the
     /// scenario runs to completion (i.e. all expected calls were responded to),
     /// using the timeout to catch missing api calls to Kubernetes.
+    /// # Panics
+    ///
+    /// This function will panic if the scenario fails to complete successfully.
     #[must_use]
     pub fn run(self, scenario: Scenario) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             // moving self => one scenario per test
+
             match scenario {
                 Scenario::FinalizerCreation(doc) => self.handle_finalizer_creation(doc).await,
                 Scenario::StatusPatch(doc) => self.handle_status_patch(doc).await,
@@ -116,7 +125,7 @@ impl ApiServerVerifier {
                         .await
                 }
             }
-            .expect("scenario completed without errors");
+                .expect("scenario completed without errors");
         })
     }
 

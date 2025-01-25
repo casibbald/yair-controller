@@ -51,7 +51,11 @@ fn init_tracer() -> sdktrace::Tracer {
     provider.tracer("tracing-otel-subscriber")
 }
 
-
+/// Initializes the telemetry and logging system.
+///
+/// # Panics
+///
+/// This function will panic if it fails to create an `EnvFilter` from the default environment or fallback to 'info'.
 #[allow(clippy::or_fun_call)]
 #[allow(clippy::unused_async)]
 pub async fn init() {
@@ -61,8 +65,8 @@ pub async fn init() {
 
     let logger = tracing_subscriber::fmt::layer().compact();
     let env_filter = EnvFilter::try_from_default_env()
-        .or(EnvFilter::try_new("info"))
-        .unwrap();
+        .or_else(|_| EnvFilter::try_new("info"))
+        .expect("Failed to create EnvFilter from default environment or fallback to 'info'");
 
     let reg = Registry::default();
     #[cfg(feature = "telemetry")]
