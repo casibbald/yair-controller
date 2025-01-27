@@ -26,3 +26,14 @@ app: {{ include "controller.name" . }}
 {{- .Values.version | default .Chart.AppVersion }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "controller.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "controller.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

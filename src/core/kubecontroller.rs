@@ -3,13 +3,10 @@
 #![allow(clippy::unused_async)]
 #![allow(unused_imports, unused_variables)]
 pub use crate::controllers::telemetry;
-use crate::controllers::{
-    kubecontroller,
-    lib::{ErrorWrapper, LocoErrorExt, Result},
-    metrics::Metrics,
-};
+use crate::controllers::{kubecontroller, metrics::Metrics};
 use loco_rs::Error as LocoError;
 
+use crate::core::{ErrorWrapper, LocoErrorExt, Result};
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
 pub use kube::runtime::{
@@ -258,7 +255,7 @@ pub async fn run(state: State) {
 #[cfg(test)]
 mod test {
     use super::{Context, Document, error_policy, reconcile};
-    use crate::controllers::lib::{
+    use crate::core::{
         fixtures::{Scenario, timeout_after_1s},
         metrics::ErrorLabels,
     };

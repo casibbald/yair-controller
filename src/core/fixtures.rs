@@ -1,5 +1,5 @@
 //! Helper methods only available for tests
-use crate::controllers::lib::{
+use crate::core::{
     Result,
     kubecontroller::{Context, DOCUMENT_FINALIZER, Document, DocumentSpec, DocumentStatus},
 };

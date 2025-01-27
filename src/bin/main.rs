@@ -1,9 +1,9 @@
 use loco_rs::cli;
 use yapp::{
     app::App,
-    controllers::{kubecontroller::run, lib::kubecontroller::State, telemetry},
+    controllers::{kubecontroller::run, telemetry},
+    core::kubecontroller::State,
 };
-
 
 #[tokio::main]
 async fn main() -> loco_rs::Result<()> {
