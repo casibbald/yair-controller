@@ -9,5 +9,8 @@ async fn current() -> Result<Response> {
 }
 
 pub fn routes() -> Routes {
-    Routes::new().prefix("/api").add("/", get(current))
+    Routes::new()
+        .prefix("/api")
+        .add("/", get(current))
+        .add("/api", get(current))
 }

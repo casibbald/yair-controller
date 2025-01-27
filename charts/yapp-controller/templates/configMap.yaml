@@ -1,9 +1,12 @@
+{{- if .Values.serviceAccount.create -}}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: yapp-controller-config
+  name: {{ include "controller.fullname" . }}
   namespace: default
+  labels:
+    {{- include "controller.labels" . | nindent 4 }}
 data:
   development.yaml: |
     # Loco configuration file documentation
@@ -26,3 +29,4 @@ data:
       # The UI hostname or IP address that mailers will point to.
       host: http://localhost
       fallback: false
+{{- end }}

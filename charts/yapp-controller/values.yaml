@@ -8,6 +8,11 @@ image:
   pullPolicy: IfNotPresent
   tag: latest
 
+
+configMap:
+  create: true
+  name: yapp-controller
+
 imagePullSecrets: []
 
 serviceAccount:
@@ -52,7 +57,12 @@ networkPolicy:
 logging:
   env_filter: info,kube=debug,controller=debug
 
-env: []
+env:
+- name: ENVIRONMENT
+  value: "development"
+- name: RUST_BACKTRACE
+  value: "1"
+
 
 service:
   type: ClusterIP

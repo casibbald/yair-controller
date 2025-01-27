@@ -185,14 +185,10 @@ jobs:
     env:
       RUST_TOOLCHAIN: nightly
       IMAGE_NAME: ${{ github.repository_owner }}/yapp-controller
+      DOCKER_CLI_EXPERIMENTAL: enabled
 
     steps:
       - uses: actions/checkout@v4
-#      - name: Log in to the Container registry
-#        uses: docker/login-action@327cd5a69de6c009b9ce71bce8395f28e651bf99
-#        with:
-#          username: ${{ github.repository_owner }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
@@ -261,7 +257,7 @@ jobs:
         id: build
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64/v8
           cache-from: type=gha,scope=base
           cache-to: type=gha,scope=base,mode=max
           build-args: |
@@ -270,42 +266,22 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Persist base image build to a tarball
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha,scope=base
-          outputs: type=docker,dest=/tmp/image.tar
+      - run: docker manifest inspect ghcr.io/casibbald/yapp-controller:latest
 
-      - name: Upload base docker image as artifact for e2e tests
-        uses: actions/upload-artifact@v4
-        with:
-          name: yapp-controller
-          path: /tmp/image.tar
-
-#  build-ghcr-publish-image:
-#    needs: [docker-base]
-#    name: Publish to GHCR.IO
-#    uses: ./.github/workflows/build-push-image.yaml
-#    with:
-#      # file: ${{ matrix.docker-image }}.dockerfile TODO: figure out how to have file per platform
-#      file: Dockerfile
-#      image: ghcr.io/${{ github.repository }}/${{ matrix.docker-image }}
-#      push: ${{ github.event_name != 'pull_request' && github.repository == 'casibbald/yapp' }}
-#      tags: |
-#        type=ref,event=branch
-#        type=ref,event=pr
-#    permissions:
-#      contents: read # for actions/checkout to fetch code
-#      id-token: write # for Cosign to be able to sign images with GHA token
-#      packages: write # for docker/build-push-action to push images
-#    strategy:
-#      matrix:
-#        docker-image:
-#          - yapp-controller
-
+#      - name: Persist base image build to a tarball
+#        uses: docker/build-push-action@v6
+#        with:
+#          context: .
+#          platforms: linux/amd64,linux/arm64/v8
+#          tags: ${{ steps.meta.outputs.tags }}
+#          cache-from: type=gha,scope=base
+#          outputs: type=docker,dest=/tmp/image.tar
+#
+#      - name: Upload base docker image as artifact for e2e tests
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: yapp-controller
+#          path: /tmp/image.tar
 
   e2e:
     runs-on: ubuntu-latest
@@ -319,15 +295,15 @@ jobs:
           k3d-name: kube
           k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
       - run: kubectl apply -f yaml/doc_crds/crd.yaml
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Download docker image artifact from docker job
-        uses: actions/download-artifact@v4
-        with:
-          name: yapp-controller
-          path: /tmp
-      - name: Load docker image from tarball
-        run: docker load --input /tmp/image.tar
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#      - name: Download docker image artifact from docker job
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: yapp-controller
+#          path: /tmp
+#      - name: Load docker image from tarball
+#        run: docker load --input /tmp/image.tar
       - name: helm template | kubctl apply
         run: |
           docker images casibbald/yapp-controller
@@ -346,9 +322,10 @@ jobs:
       - run: kubectl get pods
       - run: kubectl describe deployment yapp-controller
       - run: kubectl describe pod $(kubectl get pods | egrep 'yap-controller' | awk '{print $1}')
+      - run: kubectl logs $(kubectl get pods | egrep 'yapp-controller' | awk '{print $1}' | head -1) --ignore-errors=true --previous=true
+      - run: kubectl wait --for=condition=available deploy/yapp-controller --timeout=120s
       - run: kubectl logs deploy/yapp-controller
       - run: kubectl logs $(kubectl get pods | egrep 'yapp-controller' | awk '{print $1}' | head -1)
-      - run: kubectl wait --for=condition=available deploy/yapp-controller --timeout=120s
       - run: kubectl apply -f yaml/doc_crds/instance-samuel.yaml
       - run: sleep 2 # TODO: add condition on status and wait for it instead
       # verify reconcile actions have happened

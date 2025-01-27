@@ -9,6 +9,7 @@ install-crd: generate
 generate:
   cargo run --bin crdgen > yaml/doc_crds/crd.yaml
   helm template --release-name 'tilt' charts/yapp-controller > yaml/deployment.yaml
+  cat yaml/deployment.yaml
 
 # run with opentelemetry
 run-telemetry:
