@@ -8,6 +8,11 @@ image:
   pullPolicy: IfNotPresent
   tag: latest
 
+
+configMap:
+  create: true
+  name: yapp-controller
+
 imagePullSecrets: []
 
 serviceAccount:
@@ -29,12 +34,12 @@ securityContext: {}
 # Configure the gRPC opentelemetry push url
 tracing:
   # Use the telemetry built image and inject OPENTELEMETRY_ENDPOINT_URL
-  enabled: false
+  enabled: true
   # namespace of the collector
   namespace: monitoring
   # collector service name
   service: promstack-tempo
-  # collector port for OTLP gRPC
+  # collector port for OTLP gRPC 4317
   port: 4317
 
 networkPolicy:
@@ -50,9 +55,15 @@ networkPolicy:
     port: http
 
 logging:
-  env_filter: info,kube=debug,controller=debug
+#  env_filter: info,kube=debug,controller=debug
+  env_filter: debug,kube=debug,controller=debug
 
-env: []
+env:
+- name: ENVIRONMENT
+  value: "development"
+- name: RUST_BACKTRACE
+  value: "1"
+
 
 service:
   type: ClusterIP
@@ -70,3 +81,18 @@ serviceMonitor:
   enabled: false
   path: /api/metrics
   scheme: http
+  port: 8080
+
+  startupProbe:
+    httpGet:
+      path: /api
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 20
+  livenessProbe:
+    httpGet:
+      path: /api
+      port: 8080
+    initialDelaySeconds: 3
+    periodSeconds: 10
