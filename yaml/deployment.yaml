@@ -17,6 +17,14 @@ spec:
   - Ingress
   - Egress
   egress:
+  # pushing tracing spans to a collector
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 4317
+      protocol: TCP
 
   # Kubernetes apiserver access
   - to:
@@ -72,6 +80,39 @@ metadata:
     app.kubernetes.io/name: yapp-controller
     app.kubernetes.io/version: "latest"
 automountServiceAccountToken: true
+---
+# Source: yapp-controller/templates/configMap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yapp-controller
+  namespace: default
+  labels:
+    app: yapp-controller
+    app.kubernetes.io/name: yapp-controller
+    app.kubernetes.io/version: "latest"
+data:
+  development.yaml: |
+    # Loco configuration file documentation
+    # Application logging configuration
+    logger:
+      # Enable or disable logging.
+      enable: true
+      # Log level, options: trace, debug, info, warn or error.
+      level: debug
+      # Define the logging format. options: compact, pretty or json
+      format: compact
+      # By default the logger has filtering only logs that came from your code or logs that came from `loco` framework. to see all third party libraries
+      # Uncomment the line below to override to see all third party libraries you can enable this config and override the logger filters.
+      # override_filter: trace
+
+    # Web server configuration
+    server:
+      # Port on which the server will listen. the server binding is 0.0.0.0:{PORT}
+      port: 8080
+      # The UI hostname or IP address that mailers will point to.
+      host: 0.0.0.0
+      fallback: false
 ---
 # Source: yapp-controller/templates/rbac.yaml
 # Access for the service account
@@ -167,10 +208,23 @@ spec:
           protocol: TCP
         env:
         - name: RUST_LOG
-          value: info,kube=debug,controller=debug
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: http
-          initialDelaySeconds: 5
-          periodSeconds: 5
+          value: debug,kube=debug,controller=debug
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: OPENTELEMETRY_ENDPOINT_URL
+          value: "${env:MY_POD_IP}:4317"
+        - name: ENVIRONMENT
+          value: development
+        - name: RUST_BACKTRACE
+          value: "1"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config/development.yaml
+          subPath: development.yaml
+      volumes:
+      - name: config-volume
+        configMap:
+          name: yapp-controller

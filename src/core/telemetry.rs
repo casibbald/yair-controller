@@ -6,12 +6,6 @@ use opentelemetry::trace::{TraceId, TracerProvider};
 use opentelemetry_sdk::{Resource, runtime, trace as sdktrace, trace::Config};
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 
-//
-// #[derive(Default)]
-// pub struct Diagnostics {
-//     pub last_event: DateTime<Utc>,
-// }
-
 #[must_use]
 pub fn get_trace_id() -> TraceId {
     use opentelemetry::trace::TraceContextExt as _;
@@ -69,10 +63,13 @@ pub async fn init() {
         .expect("Failed to create EnvFilter from default environment or fallback to 'info'");
 
     let reg = Registry::default();
+
+    let subscriber = reg.with(env_filter).with(logger);
     #[cfg(feature = "telemetry")]
-    reg.with(env_filter).with(logger).with(otel).init();
-    #[cfg(not(feature = "telemetry"))]
-    reg.with(env_filter).with(logger).init();
+    let subscriber = subscriber.with(otel);
+    if tracing::subscriber::set_global_default(subscriber).is_err() {
+        eprintln!("Failed to initialize telemetry: global default trace dispatcher has already been set");
+    }
 }
 
 #[cfg(test)]

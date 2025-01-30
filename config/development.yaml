@@ -10,12 +10,11 @@ logger:
   format: compact
   # By default the logger has filtering only logs that came from your code or logs that came from `loco` framework. to see all third party libraries
   # Uncomment the line below to override to see all third party libraries you can enable this config and override the logger filters.
-  # override_filter: trace
+  override_filter: trace
 
 # Web server configuration
 server:
   # Port on which the server will listen. the server binding is 0.0.0.0:{PORT}
   port: 8080
   # The UI hostname or IP address that mailers will point to.
-  host: http://localhost
-  fallback: false
+  host: 0.0.0.0

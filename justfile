@@ -2,13 +2,20 @@
 default:
   @just --list --unsorted
 
+cleanup-resources:
+  kubectl patch doc samuel --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
+  kubectl patch doc illegal --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
+  kubectl patch doc lorem --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]'|| true
+
 # install crd into the cluster
 install-crd: generate
   kubectl apply -f yaml/crd.yaml
 
+
 generate:
   cargo run --bin crdgen > yaml/doc_crds/crd.yaml
   helm template --release-name 'tilt' charts/yapp-controller > yaml/deployment.yaml
+  cat yaml/deployment.yaml
 
 # run with opentelemetry
 run-telemetry:
@@ -36,12 +43,19 @@ test-integration: install-crd
   cargo test -- --ignored
 # run telemetry tests
 test-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:4317 cargo test --core --all-features -- get_trace_id_returns_valid_traces --ignored
+  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:4317 cargo test --all-features -- get_trace_id_returns_valid_traces --ignored
 
 # compile for musl (for docker image)
-compile features="":
+compile features="telemetry":
+  rm -f yapp-controller-amd64 yapp-controller-darwin
+  docker run --rm -t \
+  --mount type=bind,source=$(pwd),target=/volume \
+  --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+  --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+  clux/muslrust:nightly \
   cargo build --release --features={{features}} --bin yapp-controller
-  cp target/release/yapp-controller .
+  cp target/aarch64-unknown-linux-musl/release/yapp-controller ./yapp-controller-amd64
+  cp target/aarch64-apple-darwin/release/yapp-controller ./yapp-controller-darwin
 
 package: compile
   docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
