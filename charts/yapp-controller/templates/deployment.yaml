@@ -43,14 +43,9 @@ spec:
         env:
         - name: RUST_LOG
           value: {{ .Values.logging.env_filter }}
-        - name: MY_POD_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
         {{- if .Values.tracing.enabled }}
         - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "${env:MY_POD_IP}:{{ .Values.tracing.port }}"
+          value: "http://{{ .Values.tracing.host }}:{{ .Values.tracing.port }}"
         {{- end }}
         {{- with .Values.env }}
         {{- toYaml . | nindent 8 }}

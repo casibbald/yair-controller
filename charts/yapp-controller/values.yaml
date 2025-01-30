@@ -40,6 +40,7 @@ tracing:
   # collector service name
   service: promstack-tempo
   # collector port for OTLP gRPC 4317
+  host: otel-collector.default.svc.cluster.local
   port: 4317
 
 networkPolicy:

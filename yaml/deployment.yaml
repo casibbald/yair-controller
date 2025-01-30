@@ -209,13 +209,8 @@ spec:
         env:
         - name: RUST_LOG
           value: debug,kube=debug,controller=debug
-        - name: MY_POD_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
         - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "${env:MY_POD_IP}:4317"
+          value: "http://otel-collector.default.svc.cluster.local:4317"
         - name: ENVIRONMENT
           value: development
         - name: RUST_BACKTRACE

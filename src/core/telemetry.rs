@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 // some used only for telemetry feature
 use opentelemetry::trace::{TraceId, TracerProvider};
 use opentelemetry_sdk::{Resource, runtime, trace as sdktrace, trace::Config};
+use tracing::Subscriber;
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 
 #[must_use]
@@ -41,7 +42,7 @@ fn init_tracer() -> sdktrace::Tracer {
         .with_resource(resource())
         .build();
 
-    opentelemetry::global::set_tracer_provider(provider.clone());
+    // opentelemetry::global::set_tracer_provider(provider.clone());
     provider.tracer("tracing-otel-subscriber")
 }
 
@@ -67,8 +68,11 @@ pub async fn init() {
     let subscriber = reg.with(env_filter).with(logger);
     #[cfg(feature = "telemetry")]
     let subscriber = subscriber.with(otel);
+
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Failed to initialize telemetry: global default trace dispatcher has already been set");
+        eprintln!("Global default subscriber already set!");
+    } else {
+        tracing::info!("Initialized telemetry");
     }
 }
 
