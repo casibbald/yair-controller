@@ -38,6 +38,7 @@ clippy:
 # run unit tests
 test-unit:
   cargo test
+
 # run integration tests
 test-integration: install-crd
   cargo test -- --ignored
