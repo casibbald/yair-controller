@@ -70,7 +70,7 @@ pub async fn init() {
     let subscriber = subscriber.with(otel);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Global default subscriber already set!");
+        tracing::info!("Global default subscriber already set!");
     } else {
         tracing::info!("Initialized telemetry");
     }
