@@ -6,6 +6,7 @@ cleanup-resources:
   kubectl patch doc samuel --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
   kubectl patch doc illegal --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
   kubectl patch doc lorem --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]'|| true
+  kubectl patch doc test --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]'|| true
 
 # install crd into the cluster
 install-crd: generate
