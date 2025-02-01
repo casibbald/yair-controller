@@ -1,10 +1,14 @@
 #![allow(unused_imports)]
 
 use chrono::{DateTime, Utc};
-// some used only for telemetry feature
 use opentelemetry::trace::{TraceId, TracerProvider};
-use opentelemetry_sdk::{Resource, runtime, trace as sdktrace, trace::Config};
+use opentelemetry_sdk::{
+    Resource, runtime, trace as sdktrace,
+    trace::{Config, Tracer},
+};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::Subscriber;
+use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 
 #[must_use]
@@ -46,14 +50,17 @@ fn init_tracer() -> sdktrace::Tracer {
     provider.tracer("tracing-otel-subscriber")
 }
 
-/// Initializes the telemetry and logging system.
-///
-/// # Panics
-///
-/// This function will panic if it fails to create an `EnvFilter` from the default environment or fallback to 'info'.
+
+static TELEMETRY_INITIALIZED: AtomicBool = AtomicBool::new(false);
 #[allow(clippy::or_fun_call)]
 #[allow(clippy::unused_async)]
 pub async fn init() {
+    // Check if telemetry has already been initialized
+    if TELEMETRY_INITIALIZED.load(Ordering::SeqCst) {
+        tracing::info!("Telemetry already initialized, skipping...");
+        return;
+    }
+
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
     let otel = tracing_opentelemetry::OpenTelemetryLayer::new(init_tracer());
@@ -69,12 +76,17 @@ pub async fn init() {
     #[cfg(feature = "telemetry")]
     let subscriber = subscriber.with(otel);
 
-    if tracing::subscriber::set_global_default(subscriber).is_err() {
-        tracing::info!("Global default subscriber already set!");
+    // Set the global default subscriber
+    if let Err(_) = tracing::subscriber::set_global_default(subscriber) {
+        tracing::warn!("Global default subscriber already set!");
     } else {
         tracing::info!("Initialized telemetry");
     }
+
+    // Mark telemetry as initialized
+    TELEMETRY_INITIALIZED.store(true, Ordering::SeqCst);
 }
+
 
 #[cfg(test)]
 mod test {
