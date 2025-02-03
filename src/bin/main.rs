@@ -1,5 +1,7 @@
+use std::str::FromStr;
 use loco_rs::{app::Hooks, boot::StartMode, environment::Environment, prelude::*};
 use std::time::Duration;
+
 use tokio::signal;
 use yapp::{
     app::App,
@@ -18,19 +20,21 @@ struct ServeParams {
     port: i32,
 }
 
+#[allow(clippy::redundant_pub_crate)]
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     // 1. Environment setup ---------------------------------------------------
-    let environment = match std::env::var("ENVIRONMENT").map_or(Environment::Development, |env| <Environment as EnvironmentExt>::from_str(&env).unwrap_or(Environment::Development)) {
-        Ok(env) => <Environment as EnvironmentExt>::from_str(&env).unwrap_or(Environment::Development),
-        Err(_) => Environment::Development,
-    };
+    let environment = std::env::var("ENVIRONMENT")
+        .map_or(Environment::Development, |env| <Environment as FromStr>::from_str(&env).unwrap_or(Environment::Development));
     println!("🚀 Starting in {environment} environment");
 
     // 2. Config loading ------------------------------------------------------
     let config = App::load_config(&environment)
         .await
-        .expect("Failed to load config");
+        .map_err(|e| {
+            eprintln!("Failed to load config: {e:?}");
+            e
+        })?;
 
     // 3. Logger initialization -----------------------------------------------
     if !App::init_logger(&config, &environment).expect("Failed to initialize logger") {
@@ -85,7 +89,7 @@ async fn main() -> Result<()> {
                     tracing::info!("Background task received shutdown signal");
                     break;
                 }
-                _ = tokio::time::sleep(Duration::from_secs(5)) => {
+                () = tokio::time::sleep(Duration::from_secs(5)) => {
                     tracing::info!("Background task heartbeat");
                 }
             }
