@@ -1,18 +1,32 @@
+use crate::controllers;
+#[allow(unused_imports)] use crate::tasks;
 use async_trait::async_trait;
 use loco_rs::{
     Result,
     app::{AppContext, Hooks},
     bgworker::Queue,
     boot::{BootResult, StartMode, create_app},
+    config::Config,
     controller::AppRoutes,
     environment::Environment,
     task::Tasks,
 };
-
-use crate::controllers;
-#[allow(unused_imports)] use crate::tasks;
+use toml::{self, de::Error};
 
 pub struct App;
+
+impl App {
+    pub async fn load_config(environment: &Environment) -> Result<Config> {
+        let config_path = format!("config/{}.toml", environment);
+        let config_contents = tokio::fs::read_to_string(config_path).await?;
+        let config: Config = toml::from_str(&config_contents)
+            .map_err(|e| <toml::de::Error as Into<Error>>::into(e))
+            .unwrap();
+        Ok(config)
+    }
+}
+
+
 #[async_trait]
 impl Hooks for App {
     fn app_name() -> &'static str {
