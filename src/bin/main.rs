@@ -6,6 +6,8 @@ use yapp::{
     controllers::kubecontroller::run,
     core::{environment::EnvironmentExt, kubecontroller::State},
 };
+
+#[warn(dead_code)]
 async fn run_kubecontroller() {
     let state = State::default();
     run(state.clone()).await;
@@ -13,17 +15,17 @@ async fn run_kubecontroller() {
 
 struct ServeParams {
     binding: String,
-    port: u16,
+    port: i32,
 }
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     // 1. Environment setup ---------------------------------------------------
-    let environment = match std::env::var("ENVIRONMENT") {
+    let environment = match std::env::var("ENVIRONMENT").map_or(Environment::Development, |env| <Environment as EnvironmentExt>::from_str(&env).unwrap_or(Environment::Development)) {
         Ok(env) => <Environment as EnvironmentExt>::from_str(&env).unwrap_or(Environment::Development),
         Err(_) => Environment::Development,
     };
-    println!("🚀 Starting in {} environment", environment);
+    println!("🚀 Starting in {environment} environment");
 
     // 2. Config loading ------------------------------------------------------
     let config = App::load_config(&environment)
@@ -47,16 +49,16 @@ async fn main() -> Result<()> {
     // 5. Server parameters ---------------------------------------------------
     let serve_params = ServeParams {
         binding: config.server.host.clone(),
-        port: config.server.port as u16,
+        port: config.server.port,
     };
 
     // 6. Concurrent tasks setup ----------------------------------------------
-    let (tx, mut rx) = tokio::sync::oneshot::channel();
+    let (_tx, rx) = tokio::sync::oneshot::channel();
 
     // Server task
     let server_task = tokio::spawn({
-        let ctx = boot.context().clone();
-        let (tx, rx) = tokio::sync::oneshot::channel();
+        let ctx = boot.app_context.clone();
+        let (tx, _rx) = tokio::sync::oneshot::channel();
         let router = boot.router.clone();
         async move {
             tracing::info!(
@@ -75,10 +77,11 @@ async fn main() -> Result<()> {
     // Background task
     let background_task = tokio::spawn(async move {
         tracing::info!("Background task started");
-        let rx_close = rx.closed();
+        let mut rx: tokio::sync::oneshot::Receiver<()> = rx;
+        tokio::spawn(run_kubecontroller());
         loop {
             tokio::select! {
-                _ = rx_close => {
+                _ = &mut rx => {
                     tracing::info!("Background task received shutdown signal");
                     break;
                 }
@@ -101,7 +104,7 @@ async fn main() -> Result<()> {
 
     // 8. Cleanup -------------------------------------------------------------
     background_task.abort();
-    App::on_shutdown(&boot.context()).await;
+    App::on_shutdown(&boot.app_context).await;
 
     Ok(())
 }
