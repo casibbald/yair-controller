@@ -1,18 +1,18 @@
 ---
-# Source: yapp-controller/templates/networkpolicy.yaml
+# Source: yair-controller/templates/networkpolicy.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: yapp-controller
+  name: yair-controller
   namespace: default
   labels:
-    app: yapp-controller
-    app.kubernetes.io/name: yapp-controller
+    app: yair-controller
+    app.kubernetes.io/name: yair-controller
     app.kubernetes.io/version: "latest"
 spec:
   podSelector:
     matchLabels:
-      app: yapp-controller
+      app: yair-controller
   policyTypes:
   - Ingress
   - Egress
@@ -57,39 +57,39 @@ spec:
     - port: http
       protocol: TCP
 ---
-# Source: yapp-controller/templates/rbac.yaml
+# Source: yair-controller/templates/rbac.yaml
 # Scoped service account
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: yapp-controller
+  name: yair-controller
   labels:
-    app: yapp-controller
-    app.kubernetes.io/name: yapp-controller
+    app: yair-controller
+    app.kubernetes.io/name: yair-controller
     app.kubernetes.io/version: "latest"
   namespace: default
 automountServiceAccountToken: true
 ---
-# Source: yapp-controller/templates/serviceaccount.yaml
+# Source: yair-controller/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: yapp-controller
+  name: yair-controller
   labels:
-    app: yapp-controller
-    app.kubernetes.io/name: yapp-controller
+    app: yair-controller
+    app.kubernetes.io/name: yair-controller
     app.kubernetes.io/version: "latest"
 automountServiceAccountToken: true
 ---
-# Source: yapp-controller/templates/configMap.yaml
+# Source: yair-controller/templates/configMap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: yapp-controller
+  name: yair-controller
   namespace: default
   labels:
-    app: yapp-controller
-    app.kubernetes.io/name: yapp-controller
+    app: yair-controller
+    app.kubernetes.io/name: yair-controller
     app.kubernetes.io/version: "latest"
 data:
   development.yaml: |
@@ -114,12 +114,12 @@ data:
       host: 0.0.0.0
       fallback: false
 ---
-# Source: yapp-controller/templates/rbac.yaml
+# Source: yair-controller/templates/rbac.yaml
 # Access for the service account
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: yapp-controller
+  name: yair-controller
 rules:
   - apiGroups: ["kube.rs"]
     resources: ["documents", "documents/status", "documents/finalizers"]
@@ -128,31 +128,31 @@ rules:
     resources: ["events"]
     verbs: ["create"]
 ---
-# Source: yapp-controller/templates/rbac.yaml
+# Source: yair-controller/templates/rbac.yaml
 # Binding the role to the account
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: yapp-controller
+  name: yair-controller
 subjects:
 - kind: ServiceAccount
   namespace: default
-  name: yapp-controller
+  name: yair-controller
 roleRef:
   kind: ClusterRole
-  name: yapp-controller
+  name: yair-controller
   apiGroup: rbac.authorization.k8s.io
 ---
-# Source: yapp-controller/templates/service.yaml
+# Source: yair-controller/templates/service.yaml
 # Expose the http port of the service
 apiVersion: v1
 kind: Service
 metadata:
-  name: yapp-controller
+  name: yair-controller
   namespace: default
   labels:
-    app: yapp-controller
-    app.kubernetes.io/name: yapp-controller
+    app: yair-controller
+    app.kubernetes.io/name: yair-controller
     app.kubernetes.io/version: "latest"
 spec:
   type: ClusterIP
@@ -162,36 +162,36 @@ spec:
     protocol: TCP
     name: http
   selector:
-    app: yapp-controller
+    app: yair-controller
 ---
-# Source: yapp-controller/templates/deployment.yaml
+# Source: yair-controller/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: yapp-controller
+  name: yair-controller
   namespace: default
   labels:
-    app: yapp-controller
-    app.kubernetes.io/name: yapp-controller
+    app: yair-controller
+    app.kubernetes.io/name: yair-controller
     app.kubernetes.io/version: "latest"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: yapp-controller
+      app: yair-controller
   template:
     metadata:
       labels:
-        app: yapp-controller
+        app: yair-controller
       annotations:
-        kubectl.kubernetes.io/default-container: yapp-controller
+        kubectl.kubernetes.io/default-container: yair-controller
     spec:
-      serviceAccountName: yapp-controller
+      serviceAccountName: yair-controller
       securityContext:
         {}
       containers:
-      - name: yapp-controller
-        image: casibbald/yapp-controller:latest
+      - name: yair-controller
+        image: casibbald/yair-controller:latest
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
@@ -222,4 +222,4 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: yapp-controller
+          name: yair-controller

@@ -1,5 +1,5 @@
 ---
-apiVersion: replicator.yapp.example.com/v1alpha1
+apiVersion: replicator.yair.example.com/v1alpha1
 kind: ContainerReplicator
 metadata:
   namespace: my-team

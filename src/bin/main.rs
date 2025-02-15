@@ -1,5 +1,5 @@
 use loco_rs::cli;
-use yapp::{
+use yair::{
     app::App,
     controllers::{kubecontroller::run, telemetry},
     core::kubecontroller::State,

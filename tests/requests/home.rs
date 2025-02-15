@@ -1,7 +1,7 @@
 use insta::assert_debug_snapshot;
 use loco_rs::testing;
 use serial_test::serial;
-use yapp::app::App;
+use yair::app::App;
 
 // TODO: see how to dedup / extract this to app-local test utils
 // not to framework, because that would require a runtime dep on insta

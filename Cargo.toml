@@ -1,9 +1,9 @@
 [package]
-name = "yapp"
+name = "yair"
 version = "0.1.0"
 authors = ["Charles Sibbald <casibbald@gmail.com>"]
 edition = "2024"
-default-run = "yapp-controller"
+default-run = "yair-controller"
 license = "Apache-2.0"
 publish = false
 
@@ -40,7 +40,7 @@ tower-test = "0.4.0"
 
 [[bin]]
 doc = false
-name = "yapp-controller"
+name = "yair-controller"
 path = "src/bin/main.rs"
 required-features = []
 

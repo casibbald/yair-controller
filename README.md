@@ -1,7 +1,7 @@
-## yapp-rs
-[![ci](https://github.com/casibbald/yapp/actions/workflows/ci.yml/badge.svg)](https://github.com/casibbald/yapp/actions/workflows/ci.yml)
+## yair-rs
+[![ci](https://github.com/casibbald/yair/actions/workflows/ci.yml/badge.svg)](https://github.com/casibbald/yair/actions/workflows/ci.yml)
 
-A kubernetes controller to handle promotions of images for air gapped environments.
+A kubernetes controller to handle replication of images between registries for use by kubernetes deployments and orchestrated by FluxCD image automation.
 
 
 ## Installation
@@ -18,9 +18,9 @@ cargo run --bin crdgen | kubectl apply -f -
 Install the controller via `helm` by setting your preferred settings. For defaults:
 
 ```sh
-helm template charts/yapp-controller | kubectl apply -f -
-kubectl wait --for=condition=available deploy/yapp-controller --timeout=30s
-kubectl port-forward service/yapp-controller 8080:80
+helm template charts/yair-controller | kubectl apply -f -
+kubectl wait --for=condition=available deploy/yair-controller --timeout=30s
+kubectl port-forward service/yair-controller 8080:80
 ```
 
 ### Opentelemetry
@@ -28,7 +28,7 @@ kubectl port-forward service/yapp-controller 8080:80
 Build and run with `telemetry` feature, or configure it via `helm`:
 
 ```sh
-helm template charts/yapp-controller --set tracing.enabled=true | kubectl apply -f -
+helm template charts/yair-controller --set tracing.enabled=true | kubectl apply -f -
 ```
 
 This requires an opentelemetry collector in your cluster. [Tempo](https://github.com/grafana/helm-charts/tree/main/charts/tempo) / [opentelemetry-operator](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator) / [grafana agent](https://github.com/grafana/helm-charts/tree/main/charts/agent-operator) should all work out of the box. 
@@ -40,7 +40,7 @@ We have taken to using otel-collector as a default, we may choose at a later sta
 Metrics is available on `/metrics` and a `ServiceMonitor` is configurable from the chart:
 
 ```sh
-helm template charts/yapp-controller --set serviceMonitor.enabled=true | kubectl apply -f -
+helm template charts/yair-controller --set serviceMonitor.enabled=true | kubectl apply -f -
 ```
 
 ## Running
@@ -82,7 +82,7 @@ v0.33.22, built 2025-01-03
 Navigate to the provided URL, and you should see the following logs:
 ```chrome
 Finished dev [unoptimized + debuginfo] target(s) in 21.63s
-    Running `target/debug/myapp start`
+    Running `target/debug/myair start`
 
     :
     :
@@ -130,7 +130,7 @@ listening on http://localhost:8080
 
 The following additional logs when in cluster with CRD and resource deployed.
 ```sh
-2025-01-30T21:41:21.469029Z  INFO yapp::core::telemetry: Global default subscriber already set!
+2025-01-30T21:41:21.469029Z  INFO yair::core::telemetry: Global default subscriber already set!
 2025-01-30T21:41:21.470283Z DEBUG tower::buffer::worker: service.ready=true processing request
 2025-01-30T21:41:21.470534Z DEBUG HTTP: kube_client::client::builder: requesting http.method=GET http.url=https://10.96.0.1/apis/kube.rs/v1/documents?&limit=1 otel.name="list" otel.kind="client"
 2025-01-30T21:41:21.470728Z DEBUG HTTP: hyper_util::client::legacy::connect::http: connecting to 10.96.0.1:443 http.method=GET http.url=https://10.96.0.1/apis/kube.rs/v1/documents?&limit=1 otel.name="list" otel.kind="client"
@@ -154,25 +154,25 @@ The following additional logs when in cluster with CRD and resource deployed.
 2025-01-30T21:41:21.479122Z DEBUG tower::buffer::worker: service.ready=true processing request
 2025-01-30T21:41:21.479212Z DEBUG HTTP: kube_client::client::builder: requesting http.method=GET http.url=https://10.96.0.1/apis/kube.rs/v1/documents?&watch=true&timeoutSeconds=290&allowWatchBookmarks=true&resourceVersion=140817 otel.name="watch" otel.kind="client"
 2025-01-30T21:41:21.479230Z DEBUG HTTP: hyper_util::client::legacy::pool: reuse idle connection for ("https", 10.96.0.1) http.method=GET http.url=https://10.96.0.1/apis/kube.rs/v1/documents?&watch=true&timeoutSeconds=290&allowWatchBookmarks=true&resourceVersion=140817 otel.name="watch" otel.kind="client"
-2025-01-30T21:41:21.481390Z  INFO reconciling object:reconcile: yapp::core::kubecontroller: Reconciling Document document_name=test namespace=default object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test"
+2025-01-30T21:41:21.481390Z  INFO reconciling object:reconcile: yair::core::kubecontroller: Reconciling Document document_name=test namespace=default object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test"
 2025-01-30T21:41:21.481482Z DEBUG reconciling object:reconcile: tower::buffer::worker: service.ready=true processing request object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test"
 2025-01-30T21:41:21.481506Z DEBUG reconciling object:reconcile:HTTP: kube_client::client::builder: requesting object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/test/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.481558Z DEBUG reconciling object:reconcile:HTTP: hyper_util::client::legacy::connect::http: connecting to 10.96.0.1:443 object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/test/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
-2025-01-30T21:41:21.482076Z  INFO reconciling object:reconcile: yapp::core::kubecontroller: Reconciling Document document_name=samuel namespace=default object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel"
+2025-01-30T21:41:21.482076Z  INFO reconciling object:reconcile: yair::core::kubecontroller: Reconciling Document document_name=samuel namespace=default object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel"
 2025-01-30T21:41:21.482101Z DEBUG reconciling object:reconcile: tower::buffer::worker: service.ready=true processing request object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel"
 2025-01-30T21:41:21.482140Z DEBUG reconciling object:reconcile:HTTP: kube_client::client::builder: requesting object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/samuel/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.482161Z DEBUG reconciling object:reconcile:HTTP: hyper_util::client::legacy::connect::http: connecting to 10.96.0.1:443 object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/samuel/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
-2025-01-30T21:41:21.482605Z  INFO reconciling object:reconcile: yapp::core::kubecontroller: Reconciling Document document_name=lorem namespace=default object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem"
+2025-01-30T21:41:21.482605Z  INFO reconciling object:reconcile: yair::core::kubecontroller: Reconciling Document document_name=lorem namespace=default object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem"
 2025-01-30T21:41:21.482630Z DEBUG reconciling object:reconcile: tower::buffer::worker: service.ready=true processing request object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem"
 2025-01-30T21:41:21.482639Z DEBUG reconciling object:reconcile:HTTP: kube_client::client::builder: requesting object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/lorem/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.482655Z DEBUG reconciling object:reconcile:HTTP: hyper_util::client::legacy::connect::http: connecting to 10.96.0.1:443 object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/lorem/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
-2025-01-30T21:41:21.483050Z  INFO reconciling object:reconcile: yapp::core::kubecontroller: Reconciling Document document_name=illegal namespace=default object.ref=Document.v1.kube.rs/illegal.default object.reason=object updated document="illegal"
+2025-01-30T21:41:21.483050Z  INFO reconciling object:reconcile: yair::core::kubecontroller: Reconciling Document document_name=illegal namespace=default object.ref=Document.v1.kube.rs/illegal.default object.reason=object updated document="illegal"
 2025-01-30T21:41:21.483104Z DEBUG reconciling object:reconcile:HTTP: hyper_util::client::legacy::connect::http: connected to 10.96.0.1:443 object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/lorem/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.483171Z DEBUG reconciling object:reconcile:HTTP: rustls::client::hs: Resuming session     object.ref=Document.v1.kube.rs/lorem.default object.reason=object updated document="lorem" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/lorem/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.483378Z DEBUG reconciling object:reconcile:HTTP: hyper_util::client::legacy::connect::http: connected to 10.96.0.1:443 object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/test/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.483430Z DEBUG reconciling object:reconcile:HTTP: rustls::client::hs: No cached session for IpAddress(V4(Ipv4Addr([10, 96, 0, 1])))     object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/test/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.483547Z DEBUG reconciling object:reconcile:HTTP: rustls::client::hs: Not resuming any session     object.ref=Document.v1.kube.rs/test.default object.reason=object updated document="test" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/test/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
-2025-01-30T21:41:21.483705Z  WARN reconciling object: yapp::core::kubecontroller: reconcile failed: Any(ApplyFailed(Any(Custom { kind: Other, error: "IllegalDocument" }))) object.ref=Document.v1.kube.rs/illegal.default object.reason=object updated
+2025-01-30T21:41:21.483705Z  WARN reconciling object: yair::core::kubecontroller: reconcile failed: Any(ApplyFailed(Any(Custom { kind: Other, error: "IllegalDocument" }))) object.ref=Document.v1.kube.rs/illegal.default object.reason=object updated
 2025-01-30T21:41:21.483712Z DEBUG reconciling object:reconcile:HTTP: hyper_util::client::legacy::connect::http: connected to 10.96.0.1:443 object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/samuel/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.483727Z DEBUG reconciling object:reconcile:HTTP: rustls::client::hs: No cached session for IpAddress(V4(Ipv4Addr([10, 96, 0, 1])))     object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/samuel/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"
 2025-01-30T21:41:21.484060Z DEBUG reconciling object:reconcile:HTTP: rustls::client::hs: Not resuming any session     object.ref=Document.v1.kube.rs/samuel.default object.reason=object updated document="samuel" http.method=PATCH http.url=https://10.96.0.1/apis/kube.rs/v1/namespaces/default/documents/samuel/status?&force=true&fieldManager=cntrlr otel.name="patch_status" otel.kind="client"

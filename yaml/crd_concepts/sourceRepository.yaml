@@ -1,5 +1,5 @@
 ---
-apiVersion: replicator.yapp.example.com/v1alpha1
+apiVersion: replicator.yair.example.com/v1alpha1
 kind: SourceRepository
 metadata:
   namespace: my-team
@@ -9,7 +9,7 @@ metadata:
   name: my-team-app-promotion
 spec:
   repository:
-    name: myapp-docker-registry
+    name: myair-docker-registry
     location: europe-west1
     format: Docker
     projectID: example-app-ci-a1
