@@ -15,7 +15,7 @@ install-crd: generate
 
 generate:
   cargo run --bin crdgen > yaml/doc_crds/crd.yaml
-  helm template --release-name 'tilt' charts/yapp-controller > yaml/deployment.yaml
+  helm template --release-name 'tilt' charts/yair-controller > yaml/deployment.yaml
   cat yaml/deployment.yaml
 
 # run with opentelemetry
@@ -49,23 +49,23 @@ test-telemetry:
 
 # compile for musl (for docker image)
 compile features="telemetry":
-  rm -f yapp-controller-amd64 yapp-controller-darwin
+  rm -f yair-controller-amd64 yair-controller-darwin || true
   docker run --rm -t \
   --mount type=bind,source=$(pwd),target=/volume \
   --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
   --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
   clux/muslrust:nightly \
-  cargo build --release --features={{features}} --bin yapp-controller
-  cp target/aarch64-unknown-linux-musl/release/yapp-controller ./yapp-controller-amd64
-  cp target/aarch64-apple-darwin/release/yapp-controller ./yapp-controller-darwin
+  cargo build --release --features={{features}} --bin yair-controller
+  cp target/aarch64-unknown-linux-musl/release/yair-controller ./yair-controller-amd64
+  cp target/release/yair-controller ./yair-controller-darwin || true
 
 package: compile
-  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
+  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yair-controller:local .
 
 [private]
 _build features="":
   just compile {{features}}
-  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yapp-controller:local .
+  docker buildx build --platform linux/amd64,linux/arm64 -t casibbald/yair-controller:local .
 
 # docker build base
 build-base: (_build "")

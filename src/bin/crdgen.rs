@@ -1,5 +1,5 @@
 use kube::CustomResourceExt;
-use yapp::controllers::kubecontroller;
+use yair::controllers::kubecontroller;
 
 #[allow(dead_code)]
 fn main() {

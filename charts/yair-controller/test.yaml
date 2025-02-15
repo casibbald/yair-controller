@@ -1,5 +1,5 @@
 image:
-  repository: casibbald/yapp-controller
+  repository: casibbald/yair-controller
   pullPolicy: Always
   tag: "latest"
 namespace: default

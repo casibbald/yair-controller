@@ -4,14 +4,14 @@ namespace: "default"
 version: "" # pin a specific version
 
 image:
-  repository: casibbald/yapp-controller
+  repository: casibbald/yair-controller
   pullPolicy: IfNotPresent
   tag: latest
 
 
 configMap:
   create: true
-  name: yapp-controller
+  name: yair-controller
 
 imagePullSecrets: []
 

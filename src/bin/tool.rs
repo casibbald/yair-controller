@@ -1,5 +1,5 @@
 use loco_rs::cli;
-use yapp::app::App;
+use yair::app::App;
 
 pub mod crdgen;
 

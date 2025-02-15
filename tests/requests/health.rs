@@ -1,6 +1,6 @@
 use loco_rs::testing;
 use serial_test::serial;
-use yapp::app::App;
+use yair::app::App;
 
 #[tokio::test]
 #[serial]
