@@ -1,0 +1,15 @@
+{{/*apiVersion: v1*/}}
+{{/*kind: Pod*/}}
+{{/*metadata:*/}}
+{{/*  name: "{{ include "yair-controller.fullname" . }}-test-connection"*/}}
+{{/*  labels:*/}}
+{{/*    {{- include "yair-controller.labels" . | nindent 4 }}*/}}
+{{/*  annotations:*/}}
+{{/*    "helm.sh/hook": test*/}}
+{{/*spec:*/}}
+{{/*  containers:*/}}
+{{/*    - name: wget*/}}
+{{/*      image: busybox*/}}
+{{/*      command: ['wget']*/}}
+{{/*      args: ['{{ include "yair-controller.fullname" . }}:{{ .Values.service.port }}']*/}}
+{{/*  restartPolicy: Never*/}}

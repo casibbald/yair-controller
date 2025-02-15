@@ -1,0 +1,99 @@
+replicaCount: 1
+nameOverride: ""
+namespace: "default"
+version: "" # pin a specific version
+
+image:
+  repository: casibbald/yair-controller
+  pullPolicy: IfNotPresent
+  tag: latest
+
+
+configMap:
+  create: true
+  name: yair-controller
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  annotations: {}
+  automount: true
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Configure the gRPC opentelemetry push url
+tracing:
+  # Use the telemetry built image and inject OPENTELEMETRY_ENDPOINT_URL
+  enabled: true
+  # namespace of the collector
+  namespace: monitoring
+  # collector service name
+  service: promstack-tempo
+  # collector port for OTLP gRPC 4317
+  host: otel-collector.default.svc.cluster.local
+  port: 4317
+
+networkPolicy:
+  enabled: true
+  dns: true
+  # apiserver access: please scope; take addresses from "kubectl get endpoints kubernetes -n default"
+  apiserver:
+  - "0.0.0.0/0" # extremely wide-open egress on ports 443 + 6443
+  prometheus:
+    enabled: true
+    namespace: monitoring
+    app: prometheus
+    port: http
+
+logging:
+#  env_filter: info,kube=debug,controller=debug
+  env_filter: debug,kube=debug,controller=debug
+
+env:
+- name: ENVIRONMENT
+  value: "development"
+- name: RUST_BACKTRACE
+  value: "1"
+
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 100Mi
+
+serviceMonitor:
+  enabled: false
+  path: /api/metrics
+  scheme: http
+  port: 8080
+
+  startupProbe:
+    httpGet:
+      path: /api
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 20
+  livenessProbe:
+    httpGet:
+      path: /api
+      port: 8080
+    initialDelaySeconds: 3
+    periodSeconds: 10
