@@ -1,5 +1,5 @@
 ## yair-rs
-[![ci](https://github.com/casibbald/yair/actions/workflows/ci.yml/badge.svg)](https://github.com/casibbald/yair/actions/workflows/ci.yml)
+[![ci](https://github.com/casibbald/yair-controller/actions/workflows/ci.yml/badge.svg)](https://github.com/casibbald/yair-controller/actions/workflows/ci.yml)
 
 A kubernetes controller to handle replication of images between registries for use by kubernetes deployments and orchestrated by FluxCD image automation.
 
