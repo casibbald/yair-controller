@@ -284,8 +284,7 @@ jobs:
         run: |
           docker images casibbald/yair-controller
           image_tag="$(docker images casibbald/yair-controller | egrep 'yair-controller' | awk '{print $2}' | head -1)"
-          # image_tag="${image_tag:-latest}"
-          image_tag="${image_tag:-pr-41}"
+          image_tag="${image_tag:-latest}"
           echo "image tag: ${image_tag}"
           apiserver="$(kubectl get endpoints kubernetes -ojson | jq '.subsets[0].addresses[0].ip' -r)"
           helm template charts/yair-controller \
@@ -296,7 +295,7 @@ jobs:
             --set image.tag=${image_tag} \
             | kubectl apply -f -
           kubectl logs $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}' | head -1) --ignore-errors=true --previous=true
-      - run: kubectl describe pod $(kubectl get pods | egrep 'yap-controller' | awk '{print $1}')
+      - run: kubectl describe pod $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}')
       - run: kubectl logs $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}' | head -1) --ignore-errors=true --previous=true
       - run: |
           time kubectl wait --for=condition=available deploy/yair-controller --timeout=15s
