@@ -6,6 +6,7 @@ edition = "2024"
 default-run = "yair-controller"
 license = "Apache-2.0"
 publish = false
+description = "Yet Another Image Replicator Controller is a Kubernetes controller that replicates images across Image registries based on the status of deployments in a Kubernetes cluster."
 
 
 [workspace.dependencies]
@@ -47,11 +48,9 @@ required-features = []
 
 [dev-dependencies]
 serial_test = "3.1.1"
-rstest = "0.24.0"
 loco-rs = { workspace = true, features = ["testing", "cli"] }
 insta = { version = "*", features = ["redactions", "yaml", "filters"] }
 assert-json-diff = "2.0.2"
-hyper = "1"
 tower-test = "0.4.0"
 
 
