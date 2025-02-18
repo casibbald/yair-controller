@@ -280,7 +280,7 @@ jobs:
         run: |
           docker load --input /tmp/image.tar
           docker images
-      - name: helm template | kubctl apply
+      - name: Deploy controller via Helm Template
         run: |
           docker images casibbald/yair-controller
           image_tag="$(docker images casibbald/yair-controller | egrep 'yair-controller' | awk '{print $2}' | head -1)"
@@ -295,20 +295,19 @@ jobs:
             --set image.tag=${image_tag} \
             | kubectl apply -f -
           kubectl logs $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}' | head -1) --ignore-errors=true --previous=true
-      - run: kubectl describe pod $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}')
-      - run: kubectl logs $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}' | head -1) --ignore-errors=true --previous=true
-      - run: |
-          time kubectl wait --for=condition=available deploy/yair-controller --timeout=15s
-          kubectl logs deploy/yair-controller --ignore-errors=true --previous=true
-      - run: |
-          sleep 2
+      - name: Describe Pod
+        run: kubectl describe pod $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}')
+      - name: Apply sample resources
+        run: |
           kubectl apply -f yaml/doc_crds/instance-samuel.yaml
           kubectl apply -f yaml/doc_crds/instance-lorem.yaml
           kubectl apply -f yaml/doc_crds/instance-illegal.yaml
-      - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
-      - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
-      - run: kubectl get netpol yair-controller -oyaml
-      - run: |
+      - name: Validate document is reconciled and acted on
+        run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
+      - name: Validate Document has finalizer applied by controller
+        run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
+      - name: Teardown finalizers to allow destruction of k3s cluster
+        run: |
           kubectl patch doc samuel --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
           kubectl patch doc illegal --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
           kubectl patch doc lorem --type='json' -p='[{"op": "remove", "path": "/metadata/finalizers"}]' || true
