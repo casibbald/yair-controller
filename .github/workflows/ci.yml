@@ -299,6 +299,7 @@ jobs:
         run: kubectl describe pod $(kubectl get pods | egrep 'yair-controller' | awk '{print $1}')
       - name: Apply sample resources
         run: |
+          sleep 2
           kubectl apply -f yaml/doc_crds/instance-samuel.yaml
           kubectl apply -f yaml/doc_crds/instance-lorem.yaml
           kubectl apply -f yaml/doc_crds/instance-illegal.yaml
